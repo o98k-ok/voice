@@ -1,2 +1,4 @@
 # voice
-web framework
+Bilibili Audio + Terminal Player
+
+Listen to the voice of Bilibili.
