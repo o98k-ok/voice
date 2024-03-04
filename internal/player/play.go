@@ -8,7 +8,6 @@ import (
 	"github.com/faiface/beep"
 	"github.com/faiface/beep/speaker"
 	"github.com/o98k-ok/voice/internal/music"
-	"github.com/o98k-ok/voice/internal/ui"
 )
 
 type Player interface {
@@ -88,29 +87,29 @@ func (vp *VoicePlayer) Run() error {
 			case 0:
 				elem := vp.PlayList.Front()
 				if elem != nil {
-					vp.PlayingQueue.Add(*elem)
+					vp.PlayingQueue.Add(elem)
 				}
 			case 1:
 				elem := vp.PlayingQueue.Current().Next()
 				if elem == nil {
 					elem = vp.PlayList.Front()
 				}
-				vp.PlayingQueue.Add(*elem)
+				vp.PlayingQueue.Add(elem)
 			default:
 				time.Sleep(time.Millisecond * 100)
 			}
 		}
 	}()
 
-	process := ui.NewMusicProcess()
-	go func() {
-		for {
-			if vp.current() == nil {
-				time.Sleep(time.Millisecond * 100)
-			}
-			process.Run(vp.current())
-		}
-	}()
+	// process := ui.NewMusicProcess()
+	// go func() {
+	// 	for {
+	// 		if vp.current() == nil {
+	// 			time.Sleep(time.Millisecond * 100)
+	// 		}
+	// 		process.Run(vp.current())
+	// 	}
+	// }()
 	return nil
 }
 

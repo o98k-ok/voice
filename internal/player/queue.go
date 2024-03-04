@@ -10,18 +10,18 @@ import (
 )
 
 type StreamerQueue struct {
-	streamers  []*Task[list.Element]
+	streamers  []*Task[*list.Element]
 	sampleRate int
 }
 
 func NewStreamerQueue(rate int) *StreamerQueue {
 	return &StreamerQueue{
-		streamers:  make([]*Task[list.Element], 0, 2),
+		streamers:  make([]*Task[*list.Element], 0, 2),
 		sampleRate: rate,
 	}
 }
 
-func (q *StreamerQueue) Add(elem list.Element) {
+func (q *StreamerQueue) Add(elem *list.Element) {
 	data, ok := elem.Value.(*music.Music)
 	if !ok {
 		return
@@ -98,5 +98,5 @@ func (q *StreamerQueue) Current() *list.Element {
 	if len(q.streamers) == 0 || q.streamers[0] == nil {
 		return nil
 	}
-	return &q.streamers[0].val
+	return q.streamers[0].val
 }

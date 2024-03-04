@@ -2,6 +2,7 @@ package bilibili
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 
@@ -15,10 +16,17 @@ type Fetcher interface {
 	// https://api.bilibili.com/x/web-interface/search/type?__refresh__=true&_extra=&context=&page=1&page_size=42&platform=pc&highlight=1&single_column=0&keyword=%E5%91%A8%E6%9D%B0%E4%BC%A6&category_id=&search_type=video&dynamic_offset=0&preload=true&com2co=true
 	Search(keyword string, page, pageSize int) ([]*music.Music, error)
 	GetAudioURL(bvid string) string
+	Download(url string, writer io.Writer) error
 }
 
 type BilibiliFetcher struct {
 	cli *netutil.HttpClient
+}
+
+func NewBlibliFetcher(cli *netutil.HttpClient) *BilibiliFetcher {
+	return &BilibiliFetcher{
+		cli: cli,
+	}
 }
 
 type BiliResult struct {
@@ -215,4 +223,34 @@ func (bf *BilibiliFetcher) GetAudioURL(bvid string) []string {
 		urls = append(urls, u.BaseURL)
 	}
 	return urls
+}
+
+func (bf *BilibiliFetcher) Download(url string, writer io.Writer) error {
+	req := netutil.HttpRequest{
+		RawURL:  url,
+		Method:  http.MethodGet,
+		Headers: make(http.Header),
+	}
+	req.Headers.Set("accept", "*/*")
+	req.Headers.Set("accept-language", "zh-CN")
+	req.Headers.Set("referer", "https://www.bilibili.com/")
+	req.Headers.Set("sec-fetch-dest", "audio")
+	req.Headers.Set("sec-fetch-mode", "no-cors")
+	req.Headers.Set("sec-fetch-site", "cross-site")
+	req.Headers.Set("user-agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.119 Safari/537.36")
+	req.Headers.Set("range", "bytes=0-")
+
+	response, err := bf.cli.SendRequest(&req)
+	if err != nil {
+		return err
+	}
+	if response.StatusCode != http.StatusOK && response.StatusCode != http.StatusPartialContent {
+		return pkg.ErrHttpRequest
+	}
+	defer response.Body.Close()
+
+	if _, err := io.Copy(writer, response.Body); err != nil {
+		return err
+	}
+	return err
 }

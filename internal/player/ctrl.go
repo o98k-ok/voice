@@ -2,6 +2,7 @@ package player
 
 import (
 	"github.com/faiface/beep"
+	"github.com/faiface/beep/speaker"
 )
 
 type Controller interface {
@@ -44,7 +45,9 @@ type PauseCtrl struct {
 }
 
 func (pc *PauseCtrl) Send() {
+	speaker.Lock()
 	pc.Ctrl.Paused = !pc.Ctrl.Paused
+	speaker.Unlock()
 }
 
 func NewPauseCtrl(streamer beep.Streamer, defa bool) *PauseCtrl {
