@@ -5,9 +5,11 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/duke-git/lancet/v2/convertor"
 	"github.com/duke-git/lancet/v2/netutil"
+	"github.com/duke-git/lancet/v2/strutil"
 	"github.com/o98k-ok/voice/internal/music"
 	"github.com/o98k-ok/voice/internal/pkg"
 )
@@ -115,9 +117,14 @@ func (bf *BilibiliFetcher) Search(keyword string, page, pageSize int) ([]*music.
 	musics := make([]*music.Music, 0, len(result.Data.Result))
 	for _, item := range result.Data.Result {
 		musics = append(musics, &music.Music{
-			Name: item.Title,
-			Desc: item.Description,
-			URL:  item.Bvid,
+			Name: func() string {
+				extra := fmt.Sprintf("<em class=\"keyword\">%s</em>", keyword)
+				str := strings.ReplaceAll(item.Title, extra, keyword)
+				return strutil.RemoveNonPrintable(str)
+			}(),
+			Desc:     strutil.RemoveNonPrintable(item.Description),
+			URL:      item.Bvid,
+			Duration: strings.ReplaceAll(item.Duration, ":", "m") + "s",
 		})
 	}
 	return musics, nil
@@ -222,7 +229,8 @@ func (bf *BilibiliFetcher) GetAudioURL(bvid string) []string {
 	for _, u := range play.Data.Dash.Audio {
 		urls = append(urls, u.BaseURL)
 	}
-	return urls
+	// 同一个bvid下面的音频基本重复，具体情况后面再看
+	return urls[:1]
 }
 
 func (bf *BilibiliFetcher) Download(url string, writer io.Writer) error {

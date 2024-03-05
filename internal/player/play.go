@@ -29,6 +29,8 @@ type VoicePlayer struct {
 	SampleRate   int64
 	PlayList     *list.List
 	PlayingQueue *StreamerQueue
+
+	CurrentElem *list.Element
 }
 
 func NewVoicePlayer(sampleRate int64) *VoicePlayer {
@@ -89,6 +91,7 @@ func (vp *VoicePlayer) Run() error {
 				if elem != nil {
 					vp.PlayingQueue.Add(elem)
 				}
+			// try cache
 			case 1:
 				elem := vp.PlayingQueue.Current().Next()
 				if elem == nil {
@@ -145,6 +148,23 @@ func (vp *VoicePlayer) Run() error {
 
 func (vp *VoicePlayer) AddInQueue(song *music.Music) error {
 	vp.PlayList.PushBack(song)
+	return nil
+}
+
+func (vp *VoicePlayer) DryPlay(song *music.Music) error {
+	p := vp.PlayingQueue.Current()
+	if p == nil {
+		vp.AddInQueue(song)
+		return nil
+	}
+
+	vp.PlayList.InsertAfter(song, p.Next())
+
+	vp.Next()
+	// BUGS
+
+	time.Sleep(time.Millisecond * 300)
+	vp.Next()
 	return nil
 }
 
