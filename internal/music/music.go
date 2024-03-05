@@ -15,6 +15,7 @@ type Music struct {
 	URL        string
 	LocalPath  string
 	SampleRate beep.SampleRate
+	Duration   string
 
 	NextTrigger      func()
 	PauseTrigger     func()

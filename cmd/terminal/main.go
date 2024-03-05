@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"strconv"
 
 	"github.com/duke-git/lancet/v2/netutil"
 	"github.com/o98k-ok/voice/internal/bilibili"
@@ -29,51 +30,47 @@ func main() {
 	}
 	player.Run()
 
-	// search page
-	input := ui.NewInputModelProcess()
-	keyword := input.Run()
-
-	fetcher := bilibili.NewBlibliFetcher(netutil.NewHttpClient())
-	musics, err := fetcher.Search(keyword, 1, 10)
-	if err != nil {
-		return
-	}
-
-	var pack [][]string
-	for _, m := range musics {
-		pack = append(pack, []string{m.Name, m.Desc, "3m30s", m.URL})
-	}
-	bvid := ui.NewTable(pack).Run()
-
-	mconvertor := convertor.NewAfconvertConvertor("./data")
-
-	for i, u := range fetcher.GetAudioURL(bvid) {
-		go func(bvID string, url string, idx int) {
-			namein := fmt.Sprintf("%s/%s_%d.mp4", ROOT, bvID, idx)
-			nameout := fmt.Sprintf("%s/%s_%d.wav", ROOT, bvID, idx)
-			fin, _ := os.Create(namein)
-			fout, _ := os.Create(nameout)
-			fetcher.Download(url, fin)
-			fin.Close()
-
-			fin, _ = os.Open(namein)
-
-			mconvertor.ConvertM4AToWav(fin, fout)
-			fin.Close()
-			fout.Close()
-			os.Remove(namein)
-
-			err = player.AddInQueue(&music.Music{
-				Name:      bvID,
-				Desc:      bvID,
-				LocalPath: path.Join(nameout),
-			})
-		}(bvid, u, i)
-	}
-
 	for {
-		fmt.Print("Press [ENTER] to next. ")
-		fmt.Scanln()
-		player.Next()
+
+		// search page
+		input := ui.NewInputModelProcess()
+		keyword := input.Run()
+
+		fetcher := bilibili.NewBlibliFetcher(netutil.NewHttpClient())
+		musics, err := fetcher.Search(keyword, 1, 10)
+		if err != nil {
+			return
+		}
+
+		var pack [][]string
+		for i, m := range musics {
+			pack = append(pack, []string{strconv.Itoa(i), m.Name, m.Desc, m.Duration, m.URL})
+		}
+
+		orderID := ui.NewTable(pack).Run()
+		id, _ := strconv.Atoi(orderID)
+
+		mconvertor := convertor.NewAfconvertConvertor("./data")
+		for i, u := range fetcher.GetAudioURL(musics[id].URL) {
+			go func(bvID string, url string, idx int) {
+				namein := fmt.Sprintf("%s/%s_%d.mp4", ROOT, bvID, idx)
+				nameout := fmt.Sprintf("%s/%s_%d.wav", ROOT, bvID, idx)
+				fin, _ := os.Create(namein)
+				fout, _ := os.Create(nameout)
+				fetcher.Download(url, fin)
+				fin.Close()
+
+				fin, _ = os.Open(namein)
+
+				mconvertor.ConvertM4AToWav(fin, fout)
+				fin.Close()
+				fout.Close()
+				os.Remove(namein)
+
+				musics[id].LocalPath = path.Join(nameout)
+				musics[id].URL = url
+				err = player.DryPlay(musics[id])
+			}(musics[id].URL, u, i)
+		}
 	}
 }

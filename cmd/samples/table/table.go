@@ -1,17 +1,45 @@
-package ui
+package main
 
 import (
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/o98k-ok/voice/internal/ui"
 )
 
 var baseStyle = lipgloss.NewStyle().
 	BorderStyle(lipgloss.NormalBorder()).
 	BorderForeground(lipgloss.Color("240"))
 
-type tableModel struct {
+type model struct {
 	table table.Model
+}
+
+func (m model) Init() tea.Cmd { return nil }
+
+func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "esc":
+			if m.table.Focused() {
+				m.table.Blur()
+			} else {
+				m.table.Focus()
+			}
+		case "q", "ctrl+c":
+			return m, tea.Quit
+		case "enter":
+			return m, tea.Quit
+		}
+	}
+	m.table, cmd = m.table.Update(msg)
+	return m, cmd
+}
+
+func (m model) View() string {
+	return baseStyle.Render(m.table.View()) + "\n"
 }
 
 type TableModel struct {
@@ -36,7 +64,7 @@ func NewTable(values [][]string) *TableModel {
 		table.WithColumns(columns),
 		table.WithRows(rows),
 		table.WithFocused(true),
-		table.WithHeight(10),
+		table.WithHeight(7),
 	)
 
 	s := table.DefaultStyles()
@@ -51,19 +79,17 @@ func NewTable(values [][]string) *TableModel {
 		Bold(false)
 	t.SetStyles(s)
 
-	// BUGS 全屏展示不好看
 	return &TableModel{
-		program: tea.NewProgram(tableModel{t}),
+		program: tea.NewProgram(model{t}),
 	}
 }
-
 func (t *TableModel) Run() string {
 	res, err := t.program.Run()
 	if err != nil {
 		return ""
 	}
 
-	v, ok := res.(tableModel)
+	v, ok := res.(model)
 	if !ok {
 		return ""
 	}
@@ -71,29 +97,9 @@ func (t *TableModel) Run() string {
 	return v.table.SelectedRow()[0]
 }
 
-func (m tableModel) Init() tea.Cmd { return nil }
-
-func (m tableModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	var cmd tea.Cmd
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.String() {
-		case "esc":
-			if m.table.Focused() {
-				m.table.Blur()
-			} else {
-				m.table.Focus()
-			}
-		case "q", "ctrl+c":
-			return m, tea.Quit
-		case "enter":
-			return m, tea.Quit
-		}
+func main() {
+	values := [][]string{
+		{"1", "2", "3", "4", "5"},
 	}
-	m.table, cmd = m.table.Update(msg)
-	return m, cmd
-}
-
-func (m tableModel) View() string {
-	return baseStyle.Render(m.table.View()) + "\n"
+	ui.NewTable(values).Run()
 }
