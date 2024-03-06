@@ -17,7 +17,7 @@ import (
 type Fetcher interface {
 	// https://api.bilibili.com/x/web-interface/search/type?__refresh__=true&_extra=&context=&page=1&page_size=42&platform=pc&highlight=1&single_column=0&keyword=%E5%91%A8%E6%9D%B0%E4%BC%A6&category_id=&search_type=video&dynamic_offset=0&preload=true&com2co=true
 	Search(keyword string, page, pageSize int) ([]*music.Music, error)
-	GetAudioURL(bvid string) string
+	GetAudioURL(bvid string) []string
 	Download(url string, writer io.Writer) error
 }
 

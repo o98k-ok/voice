@@ -158,11 +158,13 @@ func (vp *VoicePlayer) DryPlay(song *music.Music) error {
 		return nil
 	}
 
-	vp.PlayList.InsertAfter(song, p.Next())
+	var next = p
+	if p.Next() != nil {
+		next = p.Next()
+	}
+	vp.PlayList.InsertAfter(song, next)
 
 	vp.Next()
-	// BUGS
-
 	time.Sleep(time.Millisecond * 300)
 	vp.Next()
 	return nil

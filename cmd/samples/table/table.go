@@ -4,12 +4,10 @@ import (
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/o98k-ok/voice/internal/ui"
 )
 
 var baseStyle = lipgloss.NewStyle().
-	BorderStyle(lipgloss.NormalBorder()).
-	BorderForeground(lipgloss.Color("240"))
+	Border(lipgloss.NormalBorder())
 
 type model struct {
 	table table.Model
@@ -39,7 +37,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	return baseStyle.Render(m.table.View()) + "\n"
+	return lipgloss.NewStyle().Border(lipgloss.DoubleBorder()).Render(m.table.View())
 }
 
 type TableModel struct {
@@ -48,36 +46,36 @@ type TableModel struct {
 
 func NewTable(values [][]string) *TableModel {
 	columns := []table.Column{
-		{Title: "ID", Width: 4},
-		{Title: "标题", Width: 50},
-		{Title: "简介", Width: 100},
-		{Title: "时长", Width: 8},
-		{Title: "BVID", Width: 12},
+		{Title: "ID", Width: 20},
+		// {Title: "标题", Width: 0},
+		// {Title: "简介", Width: 0},
+		// {Title: "时长", Width: 0},
+		// {Title: "BVID", Width: 0},
 	}
 
 	var rows []table.Row
 	for _, r := range values {
-		rows = append(rows, table.Row{r[0], r[1], r[2], r[3], r[4]})
+		rows = append(rows, table.Row{r[0]})
 	}
 
 	t := table.New(
 		table.WithColumns(columns),
 		table.WithRows(rows),
 		table.WithFocused(true),
-		table.WithHeight(7),
+		table.WithHeight(1),
 	)
 
-	s := table.DefaultStyles()
-	s.Header = s.Header.
-		BorderStyle(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color("240")).
-		BorderBottom(true).
-		Bold(false)
-	s.Selected = s.Selected.
-		Foreground(lipgloss.Color("229")).
-		Background(lipgloss.Color("57")).
-		Bold(false)
-	t.SetStyles(s)
+	// s := table.DefaultStyles()
+	// s.Header = s.Header.
+	// 	BorderStyle(lipgloss.NormalBorder()).
+	// 	BorderForeground(lipgloss.Color("240")).
+	// 	BorderBottom(true).
+	// 	Bold(false)
+	// s.Selected = s.Selected.
+	// 	Foreground(lipgloss.Color("229")).
+	// 	Background(lipgloss.Color("57")).
+	// 	Bold(false)
+	// t.SetStyles(s)
 
 	return &TableModel{
 		program: tea.NewProgram(model{t}),
@@ -101,5 +99,5 @@ func main() {
 	values := [][]string{
 		{"1", "2", "3", "4", "5"},
 	}
-	ui.NewTable(values).Run()
+	NewTable(values).Run()
 }
