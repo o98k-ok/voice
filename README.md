@@ -4,7 +4,7 @@
 ## Basic introduction
 一款运行在命令行的音乐播放器.
 
-# Running screenshot
+## Running screenshot
 
 ![sample](./data/screenshot.jpg)
 
