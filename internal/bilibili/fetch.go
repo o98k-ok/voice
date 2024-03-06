@@ -118,8 +118,8 @@ func (bf *BilibiliFetcher) Search(keyword string, page, pageSize int) ([]*music.
 	for _, item := range result.Data.Result {
 		musics = append(musics, &music.Music{
 			Name: func() string {
-				extra := fmt.Sprintf("<em class=\"keyword\">%s</em>", keyword)
-				str := strings.ReplaceAll(item.Title, extra, keyword)
+				str := strings.ReplaceAll(item.Title, "<em class=\"keyword\">", "")
+				str = strings.ReplaceAll(str, "</em>", "")
 				return strutil.RemoveNonPrintable(str)
 			}(),
 			Desc:     strutil.RemoveNonPrintable(item.Description),
