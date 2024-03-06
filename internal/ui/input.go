@@ -8,6 +8,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/duke-git/lancet/v2/mathutil"
 	"github.com/duke-git/lancet/v2/netutil"
 	"github.com/o98k-ok/voice/internal/bilibili"
 	"github.com/o98k-ok/voice/internal/convertor"
@@ -22,6 +23,7 @@ type InputElem struct {
 	mconvertor convertor.Convertor
 
 	playChannel chan music.Music
+	fetcherIdx  int
 }
 
 func NewInputElem(headers []string, widths []int) *InputElem {
@@ -35,6 +37,7 @@ func NewInputElem(headers []string, widths []int) *InputElem {
 		result:     NewListElem(headers, widths, nil),
 		fetcher:    bilibili.NewBlibliFetcher(netutil.NewHttpClient()),
 		mconvertor: convertor.NewAfconvertConvertor("./data"),
+		fetcherIdx: 1,
 	}
 }
 
@@ -59,10 +62,30 @@ func (ie *InputElem) View() string {
 	left2 := ie.result.View()
 	left := lipgloss.JoinVertical(lipgloss.Right, left1, "  ", left2)
 
-	right := ie.logo.View()
+	right1 := ie.logo.View()
+
+	var right2 string
+	if ie.result.table.SelectedRow() != nil {
+		right2 = ie.result.table.SelectedRow()[1]
+	}
+	right := lipgloss.JoinVertical(lipgloss.Right, right1, "  ", right2, "🛵🛵🛵🛵 ")
 
 	return lipgloss.JoinHorizontal(lipgloss.Top, left, "        ", right)
 }
+
+func (ie *InputElem) fetch(idx int) [][]string {
+	musics, err := ie.fetcher.Search(ie.textInput.Value(), idx, 10)
+	if err != nil {
+		return nil
+	}
+
+	var pack [][]string
+	for i, m := range musics {
+		pack = append(pack, []string{strconv.Itoa(i + (idx-1)*10), m.Name, m.Duration, m.URL})
+	}
+	return pack
+}
+
 func (ie *InputElem) MsgKeyBindings() map[string]map[string]func(v interface{}) tea.Cmd {
 	return map[string]map[string]func(v interface{}) tea.Cmd{
 		"tea.KeyMsg": {
@@ -89,18 +112,29 @@ func (ie *InputElem) MsgKeyBindings() map[string]map[string]func(v interface{}) 
 				}
 				return cmd
 			},
+			"right": func(v interface{}) tea.Cmd {
+				switch {
+				case ie.result.table.Focused():
+					ie.fetcherIdx += 1
+					pack := ie.fetch(ie.fetcherIdx)
+					ie.result.ResetList(pack)
+				}
+				return nil
+			},
+			"left": func(v interface{}) tea.Cmd {
+				switch {
+				case ie.result.table.Focused():
+					ie.fetcherIdx = mathutil.Max(1, ie.fetcherIdx-1)
+					pack := ie.fetch(ie.fetcherIdx)
+					ie.result.ResetList(pack)
+				}
+				return nil
+			},
 			"enter": func(v interface{}) tea.Cmd {
 				switch {
 				case ie.textInput.Focused():
-					musics, err := ie.fetcher.Search(ie.textInput.Value(), 1, 10)
-					if err != nil {
-						return nil
-					}
-
-					var pack [][]string
-					for i, m := range musics {
-						pack = append(pack, []string{strconv.Itoa(i), m.Name, m.Duration, m.URL})
-					}
+					ie.fetcherIdx = 1
+					pack := ie.fetch(ie.fetcherIdx)
 					ie.result.ResetList(pack)
 					ie.textInput.Blur()
 					ie.result.table.Focus()
