@@ -2,13 +2,9 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"path"
-	"strconv"
 
-	"github.com/duke-git/lancet/v2/netutil"
-	"github.com/o98k-ok/voice/internal/bilibili"
-	"github.com/o98k-ok/voice/internal/convertor"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/o98k-ok/voice/internal/music"
 	"github.com/o98k-ok/voice/internal/player"
 	"github.com/o98k-ok/voice/internal/ui"
@@ -30,47 +26,21 @@ func main() {
 	}
 	player.Run()
 
-	for {
+	inputElem := ui.NewInputElem([]string{"ID", "标题", "时长", "BVID"}, []int{6, 30, 6, 11})
+	framework := ui.NewFramework(
+		[]ui.Element{
+			ui.NewMenuElem([]string{"搜索", "歌单", "当前", "其他"}),
+			inputElem,
+		},
+	)
 
-		// search page
-		input := ui.NewInputModelProcess()
-		keyword := input.Run()
-
-		fetcher := bilibili.NewBlibliFetcher(netutil.NewHttpClient())
-		musics, err := fetcher.Search(keyword, 1, 10)
-		if err != nil {
-			return
+	go func() {
+		channel := inputElem.RegisterPlayer()
+		for {
+			msic := <-channel
+			player.DryPlay(&msic)
 		}
-
-		var pack [][]string
-		for i, m := range musics {
-			pack = append(pack, []string{strconv.Itoa(i), m.Name, m.Desc, m.Duration, m.URL})
-		}
-
-		orderID := ui.NewTable(pack).Run()
-		id, _ := strconv.Atoi(orderID)
-
-		mconvertor := convertor.NewAfconvertConvertor("./data")
-		for i, u := range fetcher.GetAudioURL(musics[id].URL) {
-			go func(bvID string, url string, idx int) {
-				namein := fmt.Sprintf("%s/%s_%d.mp4", ROOT, bvID, idx)
-				nameout := fmt.Sprintf("%s/%s_%d.wav", ROOT, bvID, idx)
-				fin, _ := os.Create(namein)
-				fout, _ := os.Create(nameout)
-				fetcher.Download(url, fin)
-				fin.Close()
-
-				fin, _ = os.Open(namein)
-
-				mconvertor.ConvertM4AToWav(fin, fout)
-				fin.Close()
-				fout.Close()
-				os.Remove(namein)
-
-				musics[id].LocalPath = path.Join(nameout)
-				musics[id].URL = url
-				err = player.DryPlay(musics[id])
-			}(musics[id].URL, u, i)
-		}
-	}
+	}()
+	program := tea.NewProgram(framework)
+	fmt.Println(program.Run())
 }

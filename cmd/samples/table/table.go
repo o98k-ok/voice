@@ -4,7 +4,6 @@ import (
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/o98k-ok/voice/internal/ui"
 )
 
 var baseStyle = lipgloss.NewStyle().
@@ -48,11 +47,11 @@ type TableModel struct {
 
 func NewTable(values [][]string) *TableModel {
 	columns := []table.Column{
-		{Title: "ID", Width: 4},
-		{Title: "标题", Width: 50},
-		{Title: "简介", Width: 100},
-		{Title: "时长", Width: 8},
-		{Title: "BVID", Width: 12},
+		{Title: "ID", Width: 10},
+		{Title: "标题", Width: 0},
+		// {Title: "简介", Width: 0},
+		// {Title: "时长", Width: 0},
+		// {Title: "BVID", Width: 0},
 	}
 
 	var rows []table.Row
@@ -101,5 +100,5 @@ func main() {
 	values := [][]string{
 		{"1", "2", "3", "4", "5"},
 	}
-	ui.NewTable(values).Run()
+	NewTable(values).Run()
 }
