@@ -8,14 +8,20 @@ import (
 type MenuElem struct {
 	Tabs         []string
 	ActiveTabIdx int
+	menus        []Element
 }
 
-func NewMenuElem(tabs []string) *MenuElem {
+func NewMenuElem(tabs []string, menus []Element) *MenuElem {
+	menus[0].SetActive(true)
 	return &MenuElem{
 		Tabs:         tabs,
 		ActiveTabIdx: 0,
+		menus:        menus,
 	}
 }
+
+func (m *MenuElem) Active() bool          { return true }
+func (m *MenuElem) SetActive(active bool) {}
 
 func (m *MenuElem) Init() tea.Cmd { return nil }
 func (m *MenuElem) View() string {
@@ -44,13 +50,19 @@ func (m *MenuElem) MsgKeyBindings() map[string]map[string]func(v interface{}) te
 	return map[string]map[string]func(v interface{}) tea.Cmd{
 		"tea.KeyMsg": {
 			"tab": func(v interface{}) tea.Cmd {
+				m.menus[m.ActiveTabIdx].SetActive(false)
 				m.ActiveTabIdx++
 				m.ActiveTabIdx = m.ActiveTabIdx % len(m.Tabs)
+				m.menus[m.ActiveTabIdx].SetActive(true)
+				// fmt.Print("\033[H\033[2J")
 				return nil
 			},
 			"shift+tab": func(v interface{}) tea.Cmd {
+				m.menus[m.ActiveTabIdx].SetActive(false)
 				m.ActiveTabIdx += 3
 				m.ActiveTabIdx = m.ActiveTabIdx % len(m.Tabs)
+				m.menus[m.ActiveTabIdx].SetActive(true)
+				// fmt.Print("\033[H\033[2J")
 				return nil
 			}},
 	}

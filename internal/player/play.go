@@ -47,7 +47,7 @@ func NewVoicePlayer(sampleRate int64) *VoicePlayer {
 }
 
 func (vp *VoicePlayer) Pause() error {
-	ctrl := vp.current()
+	ctrl := vp.Current()
 	if ctrl != nil && ctrl.PauseTrigger != nil {
 		ctrl.PauseTrigger()
 	}
@@ -55,14 +55,14 @@ func (vp *VoicePlayer) Pause() error {
 }
 
 func (vp *VoicePlayer) Next() (*music.Music, error) {
-	ctrl := vp.current()
+	ctrl := vp.Current()
 	if ctrl != nil && ctrl.NextTrigger != nil {
 		ctrl.NextTrigger()
 	}
 	return nil, nil
 }
 
-func (vp *VoicePlayer) current() *music.Music {
+func (vp *VoicePlayer) Current() *music.Music {
 	if vp.PlayingQueue.Current() == nil {
 		return nil
 	}
@@ -70,7 +70,7 @@ func (vp *VoicePlayer) current() *music.Music {
 }
 
 func (vp *VoicePlayer) Info() *music.MusicRealtime {
-	m := vp.current()
+	m := vp.Current()
 	return &music.MusicRealtime{
 		Name:     m.Name,
 		Desc:     m.Desc,
