@@ -64,6 +64,7 @@ func (m *MenuElem) MsgKeyBindings() map[string]map[string]func(v interface{}) te
 				m.menus[m.ActiveTabIdx].SetActive(true)
 				// fmt.Print("\033[H\033[2J")
 				return nil
-			}},
+			},
+		},
 	}
 }
