@@ -65,7 +65,9 @@ func (ie *InputElem) View() string {
 
 	left1 := "\n" + lipgloss.JoinHorizontal(lipgloss.Center, "🥳  ", box)
 	left2 := ie.result.View()
-	left := lipgloss.JoinVertical(lipgloss.Right, left1, "  ", left2)
+	help := "s input mode • ↓/j move down • ↑/k move up\n ← page left • → page right • tab next menu"
+	left3 := lipgloss.NewStyle().Bold(true).Render(help)
+	left := lipgloss.JoinVertical(lipgloss.Right, left1, "  ", left2, "  ", left3)
 
 	right1 := ie.logo.View()
 
