@@ -24,6 +24,7 @@ type InputElem struct {
 
 	playChannel chan music.Music
 	fetcherIdx  int
+	active      bool
 }
 
 func NewInputElem(headers []string, widths []int) *InputElem {
@@ -32,6 +33,7 @@ func NewInputElem(headers []string, widths []int) *InputElem {
 	elem.Prompt = "> "
 
 	return &InputElem{
+		active:     false,
 		textInput:  elem,
 		logo:       &LogoElem{},
 		result:     NewListElem(headers, widths, nil),
@@ -40,6 +42,9 @@ func NewInputElem(headers []string, widths []int) *InputElem {
 		fetcherIdx: 1,
 	}
 }
+
+func (ie *InputElem) Active() bool          { return ie.active }
+func (ie *InputElem) SetActive(active bool) { ie.active = active }
 
 func (ie *InputElem) RegisterPlayer() chan music.Music {
 	ie.playChannel = make(chan music.Music, 10)
@@ -70,7 +75,7 @@ func (ie *InputElem) View() string {
 	}
 	right := lipgloss.JoinVertical(lipgloss.Right, right1, "  ", right2, "🛵🛵🛵🛵 ")
 
-	return lipgloss.JoinHorizontal(lipgloss.Top, left, "        ", right)
+	return lipgloss.JoinHorizontal(lipgloss.Top, left, "     ", right)
 }
 
 func (ie *InputElem) fetch(idx int) [][]string {

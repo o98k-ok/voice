@@ -1,86 +1,69 @@
 package ui
 
 import (
-	"strings"
 	"time"
 
 	"github.com/charmbracelet/bubbles/progress"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/o98k-ok/voice/internal/music"
-)
-
-const (
-	padding  = 2
-	maxWidth = 14
-)
-
-var (
-	GlobalExit = make(chan interface{})
+	"github.com/charmbracelet/lipgloss"
+	"github.com/o98k-ok/voice/internal/player"
 )
 
 type tickMsg time.Time
 
-type MusicProcess struct {
+func (t tickMsg) String() string {
+	return "tickMsg"
+}
+
+type ProceeLineElem struct {
 	progress progress.Model
-	music    *music.Music
+	player   *player.VoicePlayer
+	active   bool
 }
 
-func NewMusicProcess() MusicProcess {
-	return MusicProcess{
+func NewProcessLineElem(player *player.VoicePlayer) *ProceeLineElem {
+	return &ProceeLineElem{
 		progress: progress.New(progress.WithDefaultGradient(), progress.WithoutPercentage()),
+		player:   player,
 	}
 }
 
-func (m MusicProcess) Run(music *music.Music) {
-	m.music = music
-	tea.NewProgram(m).Run()
-}
+func (pe *ProceeLineElem) Active() bool          { return pe.active }
+func (pe *ProceeLineElem) SetActive(active bool) { pe.active = active }
 
-func (m MusicProcess) Init() tea.Cmd {
-	return tickCmd()
-}
+func (pe *ProceeLineElem) Init() tea.Cmd { return tickCmd() }
 
-func (m MusicProcess) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		if msg.String() == tea.KeyCtrlC.String() {
-			GlobalExit <- struct{}{}
-			return m, tea.Quit
-		}
-		return m, nil
-
-	case tea.WindowSizeMsg:
-		m.progress.Width = msg.Width - padding*2 - 4
-		if m.progress.Width > maxWidth {
-			m.progress.Width = maxWidth
-		}
-		return m, nil
-
-	case tickMsg:
-		if m.progress.Percent() == 1.0 {
-			return m, tea.Quit
-		}
-
-		cmd := m.progress.SetPercent(float64(m.music.PositionCallback()) / float64(m.music.DurationCallback()))
-		return m, tea.Batch(tickCmd(), cmd)
-
-	// FrameMsg is sent when the progress bar wants to animate itself
-	case progress.FrameMsg:
-		progressModel, cmd := m.progress.Update(msg)
-		m.progress = progressModel.(progress.Model)
-		return m, cmd
-
-	default:
-		return m, nil
+func (pe *ProceeLineElem) View() string {
+	if pe.player == nil || pe.player.Current() == nil {
+		return ""
 	}
+
+	style := lipgloss.NewStyle().Align(lipgloss.Center).Padding(0, 40)
+
+	music := pe.player.Current()
+	return style.Render(music.Name, "  ", music.DurationRate(), "\n\n",
+		music.Desc, "\n\n",
+		pe.progress.ViewAs(pe.progress.Percent()))
 }
 
-func (m MusicProcess) View() string {
-	pad := strings.Repeat(" ", padding)
-	return "\n" +
-		pad + m.music.Name + pad + m.music.DurationRate() + "\n" +
-		pad + m.music.Desc + "\n" +
-		pad + m.progress.View() + "\n\n"
+func (pe *ProceeLineElem) MsgKeyBindings() map[string]map[string]func(interface{}) tea.Cmd {
+	return map[string]map[string]func(interface{}) tea.Cmd{
+		"ui.tickMsg": {
+			"tickMsg": func(i interface{}) tea.Cmd {
+				if pe.progress.Percent() == 1.0 || pe.player == nil || pe.player.Current() == nil {
+					return tickCmd()
+				}
+
+				cmd := pe.progress.SetPercent(float64(pe.player.Current().PositionCallback()) / float64(pe.player.Current().DurationCallback()))
+				return tea.Batch(tickCmd(), cmd)
+			},
+		},
+		// "tea.KeyMsg": {
+		// 	" ": func(i interface{}) tea.Cmd {
+		// 		return nil
+		// 	},
+		// },
+	}
 }
 
 func tickCmd() tea.Cmd {

@@ -7,7 +7,8 @@ import (
 )
 
 type ListElem struct {
-	table table.Model
+	table  table.Model
+	active bool
 }
 
 func NewListElem(headers []string, widths []int, values [][]string) *ListElem {
@@ -45,6 +46,9 @@ func NewListElem(headers []string, widths []int, values [][]string) *ListElem {
 		table: t,
 	}
 }
+
+func (le *ListElem) Active() bool          { return le.active }
+func (le *ListElem) SetActive(active bool) { le.active = active }
 
 func (le *ListElem) Init() tea.Cmd { return nil }
 func (le *ListElem) View() string {

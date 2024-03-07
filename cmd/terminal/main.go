@@ -27,13 +27,11 @@ func main() {
 	player.Run()
 
 	inputElem := ui.NewInputElem([]string{"ID", "标题", "时长", "BVID"}, []int{6, 30, 6, 11})
-	framework := ui.NewFramework(
-		[]ui.Element{
-			ui.NewMenuElem([]string{"搜索", "歌单", "当前", "其他"}),
-			inputElem,
-		},
-	)
+	processBar := ui.NewProcessLineElem(player)
 
+	elems := []ui.Element{inputElem, processBar}
+	menu := ui.NewMenuElem([]string{"搜索", "当前"}, elems)
+	framework := ui.NewFramework(menu, elems)
 	go func() {
 		channel := inputElem.RegisterPlayer()
 		for {

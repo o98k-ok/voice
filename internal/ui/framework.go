@@ -15,9 +15,14 @@ type Element interface {
 	Init() tea.Cmd
 	View() string
 	MsgKeyBindings() map[string]map[string]func(interface{}) tea.Cmd
+	Active() bool
+	SetActive(active bool)
 }
 
 type DefaultElem struct{}
+
+func (de *DefaultElem) Active() bool          { return true }
+func (de *DefaultElem) SetActive(active bool) {}
 
 func (de *DefaultElem) Init() tea.Cmd {
 	return nil
@@ -33,12 +38,14 @@ func (de *DefaultElem) MsgKeyBindings() map[string]map[string]func(interface{}) 
 
 // imp tea.Model
 type Framework struct {
-	Elems []Element
+	CommonElem Element
+	Elems      []Element
 }
 
-func NewFramework(elems []Element) *Framework {
+func NewFramework(common Element, elems []Element) *Framework {
 	work := &Framework{
-		Elems: []Element{&DefaultElem{}},
+		CommonElem: common,
+		Elems:      []Element{&DefaultElem{}},
 	}
 
 	work.Elems = append(work.Elems, elems...)
@@ -68,7 +75,9 @@ func (f *Framework) update(msg Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
 	tpe := reflect.TypeOf(msg).String()
-	for _, e := range f.Elems {
+	all := []Element{f.CommonElem}
+	all = append(all, f.Elems...)
+	for _, e := range all {
 		bindings := e.MsgKeyBindings()[tpe]
 		for key, fn := range bindings {
 			if key == msg.String() || key == ALLMsgKey {
@@ -83,9 +92,13 @@ func (f *Framework) update(msg Msg) (tea.Model, tea.Cmd) {
 
 // View mainly refactor here
 func (f *Framework) View() string {
+	border := lipgloss.NewStyle().Border(lipgloss.DoubleBorder()).Padding(2, 4, 4, 4)
 	var blocks []string
+	blocks = append(blocks, f.CommonElem.View())
 	for _, e := range f.Elems {
-		blocks = append(blocks, e.View())
+		if e.Active() {
+			blocks = append(blocks, e.View())
+		}
 	}
-	return lipgloss.JoinVertical(lipgloss.Left, blocks...)
+	return border.Render(lipgloss.JoinVertical(lipgloss.Left, blocks...))
 }

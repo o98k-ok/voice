@@ -5,7 +5,12 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-type LogoElem struct{}
+type LogoElem struct {
+	active bool
+}
+
+func (le *LogoElem) Active() bool          { return le.active }
+func (le *LogoElem) SetActive(active bool) { le.active = active }
 
 func (le *LogoElem) Init() tea.Cmd { return nil }
 func (le *LogoElem) View() string {
