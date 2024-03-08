@@ -94,9 +94,9 @@ func (q *StreamerQueue) Clear() {
 	q.streamers = q.streamers[1:]
 }
 
-func (q *StreamerQueue) Current() *list.Element {
-	if len(q.streamers) == 0 || q.streamers[0] == nil {
-		return nil
-	}
-	return q.streamers[0].val
-}
+// func (q *StreamerQueue) Current() *list.Element {
+// 	if len(q.streamers) == 0 || q.streamers[0] == nil {
+// 		return nil
+// 	}
+// 	return q.streamers[0].val
+// }

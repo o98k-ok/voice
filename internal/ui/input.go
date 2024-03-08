@@ -13,6 +13,8 @@ import (
 	"github.com/o98k-ok/voice/internal/bilibili"
 	"github.com/o98k-ok/voice/internal/convertor"
 	"github.com/o98k-ok/voice/internal/music"
+	"github.com/o98k-ok/voice/internal/pkg"
+	"github.com/o98k-ok/voice/internal/storage"
 )
 
 type InputElem struct {
@@ -25,9 +27,10 @@ type InputElem struct {
 	playChannel chan music.Music
 	fetcherIdx  int
 	active      bool
+	storage     storage.Storage
 }
 
-func NewInputElem(headers []string, widths []int) *InputElem {
+func NewInputElem(headers []string, widths []int, storage storage.Storage) *InputElem {
 	elem := textinput.New()
 	elem.Focus()
 	elem.Prompt = "> "
@@ -40,6 +43,7 @@ func NewInputElem(headers []string, widths []int) *InputElem {
 		fetcher:    bilibili.NewBlibliFetcher(netutil.NewHttpClient()),
 		mconvertor: convertor.NewAfconvertConvertor("./data"),
 		fetcherIdx: 1,
+		storage:    storage,
 	}
 }
 
@@ -73,7 +77,7 @@ func (ie *InputElem) View() string {
 
 	var right2 string
 	if ie.result.table.SelectedRow() != nil {
-		right2 = ie.result.table.SelectedRow()[1]
+		right2 = pkg.RenderWithWidth(ie.result.table.SelectedRow()[1], MaxWindowSize*0.4)
 	}
 	right := lipgloss.JoinVertical(lipgloss.Right, right1, "  ", right2, "🛵🛵🛵🛵 ")
 
@@ -88,7 +92,7 @@ func (ie *InputElem) fetch(idx int) [][]string {
 
 	var pack [][]string
 	for i, m := range musics {
-		pack = append(pack, []string{strconv.Itoa(i + (idx-1)*10), m.Name, m.Duration, m.URL})
+		pack = append(pack, []string{strconv.Itoa(i + (idx-1)*10), m.Name, m.Duration, m.BvID, m.Desc})
 	}
 	return pack
 }
@@ -97,6 +101,9 @@ func (ie *InputElem) MsgKeyBindings() map[string]map[string]func(v interface{}) 
 	return map[string]map[string]func(v interface{}) tea.Cmd{
 		"tea.KeyMsg": {
 			ALLMsgKey: func(v interface{}) tea.Cmd {
+				if !ie.active {
+					return nil
+				}
 				var cmd tea.Cmd
 				switch {
 				case ie.textInput.Focused():
@@ -120,6 +127,9 @@ func (ie *InputElem) MsgKeyBindings() map[string]map[string]func(v interface{}) 
 				return cmd
 			},
 			"right": func(v interface{}) tea.Cmd {
+				if !ie.active {
+					return nil
+				}
 				switch {
 				case ie.result.table.Focused():
 					ie.fetcherIdx += 1
@@ -129,6 +139,9 @@ func (ie *InputElem) MsgKeyBindings() map[string]map[string]func(v interface{}) 
 				return nil
 			},
 			"left": func(v interface{}) tea.Cmd {
+				if !ie.active {
+					return nil
+				}
 				switch {
 				case ie.result.table.Focused():
 					ie.fetcherIdx = mathutil.Max(1, ie.fetcherIdx-1)
@@ -138,8 +151,14 @@ func (ie *InputElem) MsgKeyBindings() map[string]map[string]func(v interface{}) 
 				return nil
 			},
 			"enter": func(v interface{}) tea.Cmd {
+				if !ie.active {
+					return nil
+				}
 				switch {
 				case ie.textInput.Focused():
+					if len(ie.textInput.Value()) == 0 {
+						return nil
+					}
 					ie.fetcherIdx = 1
 					pack := ie.fetch(ie.fetcherIdx)
 					ie.result.ResetList(pack)
@@ -150,8 +169,10 @@ func (ie *InputElem) MsgKeyBindings() map[string]map[string]func(v interface{}) 
 					bvid := msic[3]
 					for i, u := range ie.fetcher.GetAudioURL(bvid) {
 						go func(bvID string, url string, idx int) {
-							namein := fmt.Sprintf("%s/%s_%d.mp4", ROOT, bvID, idx)
-							nameout := fmt.Sprintf("%s/%s_%d.wav", ROOT, bvID, idx)
+							root := ie.storage.GetRootPath()
+							namein := fmt.Sprintf("%s/%s_%d.mp4", root, bvID, idx)
+							nameout := fmt.Sprintf("%s/%s_%d.wav", root, bvID, idx)
+
 							fin, _ := os.Create(namein)
 							fout, _ := os.Create(nameout)
 							ie.fetcher.Download(url, fin)
@@ -164,11 +185,21 @@ func (ie *InputElem) MsgKeyBindings() map[string]map[string]func(v interface{}) 
 							fout.Close()
 							os.Remove(namein)
 
+							ie.storage.SaveMusic(music.MusicKey{
+								Name:      msic[1],
+								Desc:      msic[4],
+								BVID:      bvID,
+								LocalPath: nameout,
+								Duration:  msic[2],
+							})
 							if ie.playChannel != nil {
 								ie.playChannel <- music.Music{
-									Name:      msic[0],
+									Name:      msic[1],
+									Desc:      msic[4],
 									URL:       url,
+									BvID:      bvID,
 									LocalPath: nameout,
+									Duration:  msic[2],
 								}
 							}
 						}(bvid, u, i)

@@ -13,6 +13,7 @@ type Music struct {
 	Name       string
 	Desc       string
 	URL        string
+	BvID       string
 	LocalPath  string
 	SampleRate beep.SampleRate
 	Duration   string
@@ -24,15 +25,17 @@ type Music struct {
 }
 
 func (m Music) DurationRate() string {
+	if m.PositionCallback == nil || m.DurationCallback == nil {
+		return ""
+	}
 	return fmt.Sprintf("%s/%s", m.SampleRate.D(m.PositionCallback()).Round(time.Second).String(),
 		m.SampleRate.D(m.DurationCallback()).Round(time.Second).String())
 }
 
-type MusicRealtime struct {
-	Name      string
-	Desc      string
-	URL       string
-	LocalPath string
-	Duration  int
-	Position  int
+type MusicKey struct {
+	Name      string `json:"name"`
+	Desc      string `json:"desc"`
+	BVID      string `json:"bvid"`
+	LocalPath string `json:"local_path"`
+	Duration  string `json:"duration"`
 }

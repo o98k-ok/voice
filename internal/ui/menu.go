@@ -59,7 +59,7 @@ func (m *MenuElem) MsgKeyBindings() map[string]map[string]func(v interface{}) te
 			},
 			"shift+tab": func(v interface{}) tea.Cmd {
 				m.menus[m.ActiveTabIdx].SetActive(false)
-				m.ActiveTabIdx += 3
+				m.ActiveTabIdx += len(m.Tabs) - 1
 				m.ActiveTabIdx = m.ActiveTabIdx % len(m.Tabs)
 				m.menus[m.ActiveTabIdx].SetActive(true)
 				// fmt.Print("\033[H\033[2J")

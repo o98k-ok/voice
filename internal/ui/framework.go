@@ -79,6 +79,11 @@ func (f *Framework) update(msg Msg) (tea.Model, tea.Cmd) {
 	all = append(all, f.Elems...)
 	for _, e := range all {
 		bindings := e.MsgKeyBindings()[tpe]
+		// 这里不做控制，下放到每个组件中控制
+		// processElem need background tick
+		// if !e.Active() {
+		// 	continue
+		// }
 		for key, fn := range bindings {
 			if key == msg.String() || key == ALLMsgKey {
 				if cmd := fn(msg); cmd != nil {
@@ -92,7 +97,7 @@ func (f *Framework) update(msg Msg) (tea.Model, tea.Cmd) {
 
 // View mainly refactor here
 func (f *Framework) View() string {
-	border := lipgloss.NewStyle().Border(lipgloss.DoubleBorder()).Padding(2, 4, 4, 4)
+	border := lipgloss.NewStyle().Border(lipgloss.DoubleBorder()).Align(lipgloss.Center)
 	var blocks []string
 	blocks = append(blocks, f.CommonElem.View())
 	for _, e := range f.Elems {
@@ -100,5 +105,5 @@ func (f *Framework) View() string {
 			blocks = append(blocks, e.View())
 		}
 	}
-	return border.Render(lipgloss.JoinVertical(lipgloss.Left, blocks...))
+	return border.Render(lipgloss.JoinVertical(lipgloss.Center, blocks...))
 }

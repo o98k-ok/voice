@@ -8,6 +8,8 @@ import (
 	"github.com/faiface/beep"
 	"github.com/faiface/beep/speaker"
 	"github.com/o98k-ok/voice/internal/music"
+	"github.com/o98k-ok/voice/internal/pkg"
+	"github.com/o98k-ok/voice/internal/storage"
 )
 
 type Player interface {
@@ -46,6 +48,18 @@ func NewVoicePlayer(sampleRate int64) *VoicePlayer {
 	}
 }
 
+func (vp *VoicePlayer) InitPlayList(storage storage.Storage) {
+	for m := range storage.HistoryMusics() {
+		vp.AddInQueue(&music.Music{
+			Name:      m.Name,
+			Desc:      m.Desc,
+			BvID:      m.BVID,
+			LocalPath: m.LocalPath,
+			Duration:  m.Duration,
+		})
+	}
+}
+
 func (vp *VoicePlayer) Pause() error {
 	ctrl := vp.Current()
 	if ctrl != nil && ctrl.PauseTrigger != nil {
@@ -62,22 +76,20 @@ func (vp *VoicePlayer) Next() (*music.Music, error) {
 	return nil, nil
 }
 
-func (vp *VoicePlayer) Current() *music.Music {
-	if vp.PlayingQueue.Current() == nil {
-		return nil
+func (vp *VoicePlayer) NextP(p *list.Element) (*music.Music, error) {
+	ctrl := vp.Current()
+	vp.CurrentElem = p
+	if ctrl != nil && ctrl.NextTrigger != nil {
+		ctrl.NextTrigger()
 	}
-	return vp.PlayingQueue.Current().Value.(*music.Music)
+	return nil, nil
 }
 
-func (vp *VoicePlayer) Info() *music.MusicRealtime {
-	m := vp.Current()
-	return &music.MusicRealtime{
-		Name:     m.Name,
-		Desc:     m.Desc,
-		URL:      m.URL,
-		Duration: m.DurationCallback(),
-		Position: m.PositionCallback(),
+func (vp *VoicePlayer) Current() *music.Music {
+	if vp.CurrentElem == nil {
+		return nil
 	}
+	return vp.CurrentElem.Value.(*music.Music)
 }
 
 func (vp *VoicePlayer) Run() error {
@@ -85,66 +97,23 @@ func (vp *VoicePlayer) Run() error {
 
 	go func() {
 		for {
-			switch vp.PlayingQueue.Size() {
-			case 0:
-				elem := vp.PlayList.Front()
-				if elem != nil {
-					vp.PlayingQueue.Add(elem)
-				}
-			// try cache
-			case 1:
-				elem := vp.PlayingQueue.Current().Next()
-				if elem == nil {
-					elem = vp.PlayList.Front()
-				}
-				vp.PlayingQueue.Add(elem)
-			default:
-				time.Sleep(time.Millisecond * 100)
+			if vp.CurrentElem == nil {
+				vp.CurrentElem = vp.PlayList.Front()
 			}
+
+			if vp.PlayingQueue.Size() == 0 && vp.CurrentElem != nil {
+				// avoid stream conflict
+				// time.Sleep(time.Millisecond * 100)
+				vp.CurrentElem = pkg.NextForward(vp.PlayList, vp.CurrentElem)
+				if vp.CurrentElem != nil {
+					vp.PlayingQueue.Add(vp.CurrentElem)
+				}
+			}
+			time.Sleep(time.Microsecond * 100)
 		}
 	}()
-
-	// process := ui.NewMusicProcess()
-	// go func() {
-	// 	for {
-	// 		if vp.current() == nil {
-	// 			time.Sleep(time.Millisecond * 100)
-	// 		}
-	// 		process.Run(vp.current())
-	// 	}
-	// }()
 	return nil
 }
-
-// shit lancet without insertAfter
-// func (vp *VoicePlayer) insertSong(curret *datastructure.LinkNode[*music.Music], song *music.Music) *datastructure.LinkNode[*music.Music] {
-// 	if vp.Queue.Head == nil || curret == nil {
-// 		vp.Queue.InsertAtHead(song)
-// 		return vp.Queue.Head
-// 	}
-
-// 	next := curret.Next
-// 	node := datastructure.NewLinkNode(song)
-// 	curret.Next = node
-// 	node.Pre = curret
-// 	node.Next = next
-
-// 	if next != nil {
-// 		next.Pre = node
-// 	}
-// 	return node
-// }
-
-// func (vp *VoicePlayer) PlayIt(song *music.Music) error {
-// 	// process old song
-// 	if !reflect.ValueOf(vp.NextCtrl).IsNil() {
-// 		vp.NextCtrl.Send()
-// 	}
-
-// 	// process new song
-// 	// vp.Playing = vp.insertSong(vp.Playing, song)
-// 	return vp.playIt(song)
-// }
 
 func (vp *VoicePlayer) AddInQueue(song *music.Music) error {
 	vp.PlayList.PushBack(song)
@@ -152,32 +121,11 @@ func (vp *VoicePlayer) AddInQueue(song *music.Music) error {
 }
 
 func (vp *VoicePlayer) DryPlay(song *music.Music) error {
-	p := vp.PlayingQueue.Current()
-	if p == nil {
+	if vp.CurrentElem == nil {
 		vp.AddInQueue(song)
 		return nil
 	}
-
-	var next = p
-	if p.Next() != nil {
-		next = p.Next()
-	}
-	vp.PlayList.InsertAfter(song, next)
-
-	vp.Next()
-	time.Sleep(time.Millisecond * 300)
+	vp.PlayList.InsertAfter(song, vp.CurrentElem)
 	vp.Next()
 	return nil
 }
-
-// func (vp *VoicePlayer) Play() error {
-// 	if vp.Playing == nil {
-// 		if vp.PlayList.Size() == 0 {
-// 			// holding
-// 			return nil
-// 		}
-
-// 		vp.Playing = vp.PlayList.Head
-// 	}
-// 	return vp.playIt(vp.Playing.Value)
-// }

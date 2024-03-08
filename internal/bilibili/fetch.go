@@ -123,7 +123,7 @@ func (bf *BilibiliFetcher) Search(keyword string, page, pageSize int) ([]*music.
 				return strutil.RemoveNonPrintable(str)
 			}(),
 			Desc:     strutil.RemoveNonPrintable(item.Description),
-			URL:      item.Bvid,
+			BvID:     item.Bvid,
 			Duration: strings.ReplaceAll(item.Duration, ":", "m") + "s",
 		})
 	}
