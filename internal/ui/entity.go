@@ -7,7 +7,6 @@ import (
 const (
 	MaxWindowSize = 120
 	ALLMsgKey     = "*"
-	ROOT          = "./data"
 )
 
 var (
