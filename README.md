@@ -1,6 +1,10 @@
 # VOICE
 <img src="./data/voice.png" width="100"><br>
 
+
+[![build](https://github.com/o98k-ok/voice/actions/workflows/go.yml/badge.svg)](https://github.com/o98k-ok/voice/actions/workflows/go.yml)
+[![Release](https://img.shields.io/badge/release-0.0.1-green.svg)](https://github.com/o98k-ok/voice/releases)
+
 ## Basic introduction
 一款运行在命令行的音乐播放器.
 
