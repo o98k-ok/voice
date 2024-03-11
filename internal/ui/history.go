@@ -2,8 +2,11 @@ package ui
 
 import (
 	"container/list"
+	"math"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
+	"github.com/duke-git/lancet/v2/strutil"
 	"github.com/o98k-ok/voice/internal/music"
 	"github.com/o98k-ok/voice/internal/pkg"
 	"github.com/o98k-ok/voice/internal/player"
@@ -14,12 +17,17 @@ type HistoryList struct {
 	player  *player.VoicePlayer
 	active  bool
 	current int
+
+	page  int
+	limit int
 }
 
-func NewHistoryList(headers []string, widths []int, player *player.VoicePlayer) *HistoryList {
+func NewHistoryList(player *player.VoicePlayer, headers []string, widths []int) *HistoryList {
 	return &HistoryList{
 		list:   NewListElem(headers, widths, nil),
 		player: player,
+		page:   1,
+		limit:  10,
 	}
 }
 
@@ -28,36 +36,56 @@ func (hl *HistoryList) Init() tea.Cmd {
 }
 
 func (hl *HistoryList) View() string {
-	return hl.list.View()
+	help := "enter play • ↓/j move down • ↑/k move up\n ← page left • → page right • tab next menu"
+	return lipgloss.JoinVertical(lipgloss.Center, hl.list.View(), "\n", help)
 }
 
-func (hl *HistoryList) fechList() [][]string {
-	if hl.player.CurrentElem == nil {
-		return nil
-	}
-
+func (hl *HistoryList) fechByBvID(bvID string, limit int) [][]string {
+	var page int = 1
 	var values [][]string
-	p := hl.player.CurrentElem
-	hl.current = 0
-	for i := 0; i < 3; i++ {
-		if p.Prev() == nil {
-			break
-		}
-		p = p.Prev()
-		hl.current += 1
-	}
-
-	for i := 0; i < 10; i++ {
-		if p == nil {
-			break
-		}
-
-		m := p.Value.(*music.Music)
-		if m != nil {
+	for p := hl.player.PlayList.Front(); p != nil; p = p.Next() {
+		values = [][]string{}
+		var got bool
+		for i := 0; i < limit; i++ {
+			if p == nil {
+				break
+			}
+			m := p.Value.(*music.Music)
+			if m.BvID == bvID {
+				got = true
+				hl.current = i
+				hl.page = page
+			}
 			values = append(values, []string{m.Name, m.Desc, m.Duration, m.BvID})
+			p = p.Next()
 		}
-		p = p.Next()
+		if got {
+			break
+		}
+		page += 1
 	}
+	return values
+}
+
+func (hl *HistoryList) fechList(off, limit int) [][]string {
+	var page int = 1
+	var values [][]string
+	for p := hl.player.PlayList.Front(); p != nil; p = p.Next() {
+		values = [][]string{}
+		for i := 0; i < limit; i++ {
+			if p == nil {
+				break
+			}
+			m := p.Value.(*music.Music)
+			values = append(values, []string{m.Name, m.Desc, m.Duration, m.BvID})
+			p = p.Next()
+		}
+		if page == off {
+			break
+		}
+		page++
+	}
+	hl.current = len(values) / 2
 	return values
 }
 
@@ -65,12 +93,12 @@ func (hl *HistoryList) MsgKeyBindings() map[string]map[string]func(interface{}) 
 	return map[string]map[string]func(interface{}) tea.Cmd{
 		"tea.KeyMsg": {
 			ALLMsgKey: func(v interface{}) tea.Cmd {
-				if !hl.active {
+				if !hl.active || strutil.ContainsAny(v.(tea.KeyMsg).String(), []string{" ", "left", "right"}) {
 					return nil
 				}
 				hl.list.table.Focus()
 
-				hl.list.ResetList(hl.fechList())
+				hl.list.ResetList(hl.fechByBvID(hl.player.CurrentElem.Value.(*music.Music).BvID, 10))
 				var cmd tea.Cmd
 				hl.list.table, cmd = hl.list.table.Update(v)
 				return cmd
@@ -99,6 +127,36 @@ func (hl *HistoryList) MsgKeyBindings() map[string]map[string]func(interface{}) 
 				p := pkg.NextBackward(hl.player.PlayList, newElem)
 				hl.player.NextP(p)
 				return nil
+			},
+			" ": func(i interface{}) tea.Cmd {
+				if !hl.active {
+					return nil
+				}
+				hl.player.Pause()
+				return nil
+			},
+			"right": func(i interface{}) tea.Cmd {
+				size := math.Ceil(float64(hl.player.PlayList.Len()) / float64(hl.limit))
+
+				if hl.page < int(size) {
+					hl.page += 1
+				}
+
+				hl.list.ResetList(hl.fechList(hl.page, hl.limit))
+				hl.list.table.SetCursor(hl.current)
+				var cmd tea.Cmd
+				hl.list.table, cmd = hl.list.table.Update(i)
+				return cmd
+			},
+			"left": func(i interface{}) tea.Cmd {
+				if hl.page > 1 {
+					hl.page -= 1
+				}
+				hl.list.ResetList(hl.fechList(hl.page, hl.limit))
+				hl.list.table.SetCursor(hl.current)
+				var cmd tea.Cmd
+				hl.list.table, cmd = hl.list.table.Update(i)
+				return cmd
 			},
 		},
 	}
