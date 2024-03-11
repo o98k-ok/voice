@@ -112,7 +112,7 @@ func (hl *HistoryList) MsgKeyBindings() map[string]map[string]func(interface{}) 
 				return nil
 			},
 			"enter": func(i interface{}) tea.Cmd {
-				if !hl.active {
+				if !hl.active || len(hl.list.table.Rows()) == 0 {
 					return nil
 				}
 
