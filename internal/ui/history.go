@@ -43,7 +43,9 @@ func (hl *HistoryList) View() string {
 func (hl *HistoryList) fechByBvID(bvID string, limit int) [][]string {
 	var page int = 1
 	var values [][]string
-	for p := hl.player.PlayList.Front(); p != nil; p = p.Next() {
+
+	p := hl.player.PlayList.Front()
+	for {
 		values = [][]string{}
 		var got bool
 		for i := 0; i < limit; i++ {
@@ -59,7 +61,7 @@ func (hl *HistoryList) fechByBvID(bvID string, limit int) [][]string {
 			values = append(values, []string{m.Name, m.Desc, m.Duration, m.BvID})
 			p = p.Next()
 		}
-		if got {
+		if got || p == nil {
 			break
 		}
 		page += 1
@@ -70,7 +72,9 @@ func (hl *HistoryList) fechByBvID(bvID string, limit int) [][]string {
 func (hl *HistoryList) fechList(off, limit int) [][]string {
 	var page int = 1
 	var values [][]string
-	for p := hl.player.PlayList.Front(); p != nil; p = p.Next() {
+
+	p := hl.player.PlayList.Front()
+	for {
 		values = [][]string{}
 		for i := 0; i < limit; i++ {
 			if p == nil {
@@ -80,7 +84,7 @@ func (hl *HistoryList) fechList(off, limit int) [][]string {
 			values = append(values, []string{m.Name, m.Desc, m.Duration, m.BvID})
 			p = p.Next()
 		}
-		if page == off {
+		if page >= off || p == nil {
 			break
 		}
 		page++
@@ -136,6 +140,9 @@ func (hl *HistoryList) MsgKeyBindings() map[string]map[string]func(interface{}) 
 				return nil
 			},
 			"right": func(i interface{}) tea.Cmd {
+				if !hl.active {
+					return nil
+				}
 				size := math.Ceil(float64(hl.player.PlayList.Len()) / float64(hl.limit))
 
 				if hl.page < int(size) {
@@ -149,6 +156,9 @@ func (hl *HistoryList) MsgKeyBindings() map[string]map[string]func(interface{}) 
 				return cmd
 			},
 			"left": func(i interface{}) tea.Cmd {
+				if !hl.active {
+					return nil
+				}
 				if hl.page > 1 {
 					hl.page -= 1
 				}
