@@ -10,6 +10,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/duke-git/lancet/v2/mathutil"
 	"github.com/duke-git/lancet/v2/netutil"
+	"github.com/duke-git/lancet/v2/strutil"
 	"github.com/o98k-ok/voice/internal/bilibili"
 	"github.com/o98k-ok/voice/internal/convertor"
 	"github.com/o98k-ok/voice/internal/music"
@@ -66,7 +67,7 @@ func (ie *InputElem) View() string {
 
 	left1 := "\n" + lipgloss.JoinHorizontal(lipgloss.Center, "🥳  ", box)
 	left2 := ie.result.View()
-	help := "s input mode • ↓/j move down • ↑/k move up\n ← page left • → page right • tab next menu"
+	help := "> switch mode • ↓ move down • ↑ move up\n ← page left • → page right • tab next menu"
 	left3 := lipgloss.NewStyle().Bold(true).Render(help)
 	left := lipgloss.JoinVertical(lipgloss.Right, left1, "  ", left2, "  ", left3)
 
@@ -98,6 +99,42 @@ func (ie *InputElem) MsgKeyBindings() map[string]map[string]func(v interface{}) 
 	return map[string]map[string]func(v interface{}) tea.Cmd{
 		"tea.KeyMsg": {
 			ALLMsgKey: func(v interface{}) tea.Cmd {
+				if !ie.active || strutil.ContainsAny(v.(tea.KeyMsg).String(), []string{"up", "down", ">", " "}) {
+					return nil
+				}
+				var cmd tea.Cmd
+				if ie.textInput.Focused() {
+					ie.textInput, cmd = ie.textInput.Update(v)
+				}
+				return cmd
+			},
+			"down": func(v interface{}) tea.Cmd {
+				if !ie.active {
+					return nil
+				}
+				if ie.textInput.Focused() {
+					ie.textInput.Blur()
+					ie.result.table.Focus()
+					return nil
+				}
+				var cmd tea.Cmd
+				ie.result.table, cmd = ie.result.table.Update(v)
+				return cmd
+			},
+			"up": func(v interface{}) tea.Cmd {
+				if !ie.active {
+					return nil
+				}
+				var cmd tea.Cmd
+				if ie.result.table.Cursor() <= 0 {
+					ie.result.table.Blur()
+					ie.textInput.Focus()
+					return cmd
+				}
+				ie.result.table, cmd = ie.result.table.Update(v)
+				return cmd
+			},
+			" ": func(v interface{}) tea.Cmd {
 				if !ie.active {
 					return nil
 				}
@@ -107,23 +144,25 @@ func (ie *InputElem) MsgKeyBindings() map[string]map[string]func(v interface{}) 
 					ie.textInput, cmd = ie.textInput.Update(v)
 					return cmd
 				case ie.result.table.Focused():
-					val, ok := v.(tea.KeyMsg)
-					if !ok {
-						return cmd
-					}
-
-					switch {
-					case val.String() == "s":
-						ie.result.table.Blur()
-						ie.textInput.Focus()
-					case val.String() == " ":
-						ie.player.Pause()
-					default:
-						ie.result.table, cmd = ie.result.table.Update(v)
-					}
+					ie.player.Pause()
 					return cmd
 				}
 				return cmd
+			},
+			">": func(v interface{}) tea.Cmd {
+				if !ie.active {
+					return nil
+				}
+				switch {
+				case ie.textInput.Focused():
+					ie.textInput.Blur()
+					ie.result.table.Focus()
+				case ie.result.table.Focused():
+					ie.result.table.Blur()
+					ie.textInput.Focus()
+				default:
+				}
+				return nil
 			},
 			"right": func(v interface{}) tea.Cmd {
 				if !ie.active {
@@ -164,6 +203,9 @@ func (ie *InputElem) MsgKeyBindings() map[string]map[string]func(v interface{}) 
 					ie.textInput.Blur()
 					ie.result.table.Focus()
 				case ie.result.table.Focused():
+					if len(ie.result.table.Rows()) == 0 {
+						return nil
+					}
 					msic := ie.result.table.SelectedRow()
 					bvid := msic[3]
 					for i, u := range ie.fetcher.GetAudioURL(bvid) {
