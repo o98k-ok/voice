@@ -76,6 +76,10 @@ func (pe *ProceeLineElem) MsgKeyBindings() map[string]map[string]func(interface{
 				return nil
 			},
 			"p": func(interface{}) tea.Cmd {
+				if pe.active {
+					p := pkg.NextN(pe.player.PlayList, pe.player.CurrentElem, -2)
+					pe.player.NextP(p)
+				}
 				return nil
 			},
 		},

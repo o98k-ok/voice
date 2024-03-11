@@ -14,6 +14,7 @@ import (
 	"github.com/o98k-ok/voice/internal/convertor"
 	"github.com/o98k-ok/voice/internal/music"
 	"github.com/o98k-ok/voice/internal/pkg"
+	"github.com/o98k-ok/voice/internal/player"
 	"github.com/o98k-ok/voice/internal/storage"
 )
 
@@ -24,13 +25,13 @@ type InputElem struct {
 	fetcher    bilibili.Fetcher
 	mconvertor convertor.Convertor
 
-	playChannel chan music.Music
-	fetcherIdx  int
-	active      bool
-	storage     storage.Storage
+	fetcherIdx int
+	active     bool
+	storage    storage.Storage
+	player     *player.VoicePlayer
 }
 
-func NewInputElem(headers []string, widths []int, storage storage.Storage) *InputElem {
+func NewInputElem(player *player.VoicePlayer, storage storage.Storage, headers []string, widths []int) *InputElem {
 	elem := textinput.New()
 	elem.Focus()
 	elem.Prompt = "> "
@@ -44,16 +45,12 @@ func NewInputElem(headers []string, widths []int, storage storage.Storage) *Inpu
 		mconvertor: convertor.NewAfconvertConvertor("./data"),
 		fetcherIdx: 1,
 		storage:    storage,
+		player:     player,
 	}
 }
 
 func (ie *InputElem) Active() bool          { return ie.active }
 func (ie *InputElem) SetActive(active bool) { ie.active = active }
-
-func (ie *InputElem) RegisterPlayer() chan music.Music {
-	ie.playChannel = make(chan music.Music, 10)
-	return ie.playChannel
-}
 
 func (ie *InputElem) Init() tea.Cmd {
 	return textinput.Blink
@@ -119,6 +116,8 @@ func (ie *InputElem) MsgKeyBindings() map[string]map[string]func(v interface{}) 
 					case val.String() == "s":
 						ie.result.table.Blur()
 						ie.textInput.Focus()
+					case val.String() == " ":
+						ie.player.Pause()
 					default:
 						ie.result.table, cmd = ie.result.table.Update(v)
 					}
@@ -192,16 +191,16 @@ func (ie *InputElem) MsgKeyBindings() map[string]map[string]func(v interface{}) 
 								LocalPath: nameout,
 								Duration:  msic[2],
 							})
-							if ie.playChannel != nil {
-								ie.playChannel <- music.Music{
-									Name:      msic[1],
-									Desc:      msic[4],
-									URL:       url,
-									BvID:      bvID,
-									LocalPath: nameout,
-									Duration:  msic[2],
-								}
+
+							mm := music.Music{
+								Name:      msic[1],
+								Desc:      msic[4],
+								URL:       url,
+								BvID:      bvID,
+								LocalPath: nameout,
+								Duration:  msic[2],
 							}
+							ie.player.DryPlay(&mm)
 						}(bvid, u, i)
 					}
 				}

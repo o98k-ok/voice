@@ -19,20 +19,20 @@ func main() {
 	player.InitPlayList(localIndex)
 	player.Run()
 
-	inputElem := ui.NewInputElem([]string{"ID", "标题", "时长", "BVID", "描述"}, []int{6, 30, 6, 12, 0}, localIndex)
+	inputElem := ui.NewInputElem(player, localIndex,
+		[]string{"ID", "标题", "时长", "BVID", "描述"},
+		[]int{6, 30, 6, 12, 0},
+	)
 	processBar := ui.NewProcessLineElem(player)
-	historyList := ui.NewHistoryList([]string{"标题", "描述", "时长", "BVID"}, []int{40, 60, 12, 0}, player)
+	historyList := ui.NewHistoryList(player,
+		[]string{"标题", "描述", "时长", "BVID"},
+		[]int{40, 60, 12, 0},
+	)
 
-	elems := []ui.Element{inputElem, historyList, processBar}
-	menu := ui.NewMenuElem([]string{"搜索", "列表", "当前"}, elems)
+	elems := []ui.Element{processBar, inputElem, historyList}
+	menu := ui.NewMenuElem([]string{"🤓  当前", "😂  搜索", "😳  列表"}, elems)
 	framework := ui.NewFramework(menu, elems)
-	go func() {
-		channel := inputElem.RegisterPlayer()
-		for {
-			msic := <-channel
-			player.DryPlay(&msic)
-		}
-	}()
+
 	program := tea.NewProgram(framework)
 	fmt.Println(program.Run())
 }
