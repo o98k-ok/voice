@@ -24,13 +24,13 @@ func main() {
 		[]int{6, 30, 6, 12, 0},
 	)
 	processBar := ui.NewProcessLineElem(player)
-	historyList := ui.NewHistoryList(player,
-		[]string{"标题", "描述", "时长", "BVID"},
-		[]int{40, 60, 12, 0},
+	historyList := ui.NewHistoryList(player, localIndex,
+		[]string{"标题", "描述", "时长", "BVID", "path"},
+		[]int{40, 60, 12, 0, 0},
 	)
 
 	elems := []ui.Element{processBar, inputElem, historyList}
-	menu := ui.NewMenuElem([]string{"🤓  当前", "😂  搜索", "😳  列表"}, elems)
+	menu := ui.NewMenuElem([]string{"⏯  当前", "🔎  搜索", "📜  列表"}, elems)
 	framework := ui.NewFramework(menu, elems)
 
 	program := tea.NewProgram(framework)
