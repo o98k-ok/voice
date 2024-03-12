@@ -68,6 +68,35 @@ func (vp *VoicePlayer) Pause() error {
 	return nil
 }
 
+func (vp *VoicePlayer) FastForward() error {
+	ctrl := vp.Current()
+	if ctrl != nil && ctrl.SeekTrigger != nil && ctrl.PositionCallback != nil && ctrl.DurationCallback != nil {
+		p := ctrl.PositionCallback() + ctrl.SampleRate.N(time.Second*5)
+		if p > ctrl.DurationCallback() {
+			p = ctrl.DurationCallback()
+		}
+
+		speaker.Lock()
+		ctrl.SeekTrigger(p)
+		speaker.Unlock()
+
+		return nil
+	}
+	return nil
+}
+
+func (vp *VoicePlayer) FastBackward() error {
+	ctrl := vp.Current()
+	if ctrl != nil && ctrl.SeekTrigger != nil && ctrl.PositionCallback != nil {
+		p := ctrl.PositionCallback() - ctrl.SampleRate.N(5*time.Second)
+		if p < 0 {
+			p = 0
+		}
+		return ctrl.SeekTrigger(p)
+	}
+	return nil
+}
+
 func (vp *VoicePlayer) Next() (*music.Music, error) {
 	ctrl := vp.Current()
 	if ctrl != nil && ctrl.NextTrigger != nil {

@@ -44,7 +44,7 @@ func (pe *ProceeLineElem) View() string {
 		pkg.RenderWithWidth(music.Name, MaxWindowSize*0.6), "\n",
 		pkg.RenderWithWidth(music.Desc, MaxWindowSize*0.6), "\n",
 		pe.progress.ViewAs(pe.progress.Percent())+"  "+music.DurationRate(), "\n",
-		lipgloss.NewStyle().Bold(true).Render("tab next menu • p prev • space pause/play • n next"))
+		lipgloss.NewStyle().Bold(true).Render("p prev • space pause/play • n next\ntab next menu • left -5s • right +5s"))
 }
 
 func (pe *ProceeLineElem) MsgKeyBindings() map[string]map[string]func(interface{}) tea.Cmd {
@@ -80,6 +80,22 @@ func (pe *ProceeLineElem) MsgKeyBindings() map[string]map[string]func(interface{
 					p := pkg.NextN(pe.player.PlayList, pe.player.CurrentElem, -2)
 					pe.player.NextP(p)
 				}
+				return nil
+			},
+			"left": func(i interface{}) tea.Cmd {
+				if !pe.active {
+					return nil
+				}
+
+				pe.player.FastBackward()
+				return nil
+			},
+			"right": func(i interface{}) tea.Cmd {
+				if !pe.active {
+					return nil
+				}
+
+				pe.player.FastForward()
 				return nil
 			},
 		},

@@ -43,7 +43,8 @@ func (ac *AfconvertConvertor) ConvertM4AToWav(reader io.Reader, writer io.Writer
 	}()
 	defer os.Remove(dstname)
 
-	c := fmt.Sprintf("afconvert %s -f WAVE  -d LEI24 %s", src.Name(), dstname)
+	// UI8 目前用的数据格式，有些数据格式没办法快进
+	c := fmt.Sprintf("afconvert %s -f WAVE  -d UI8 %s", src.Name(), dstname)
 	if _, _, err := system.ExecCommand(c); err != nil {
 		return err
 	}
