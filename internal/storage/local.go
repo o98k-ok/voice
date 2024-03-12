@@ -14,6 +14,7 @@ type Storage interface {
 	SaveMusic(music music.MusicKey) error
 	HistoryMusics() chan music.MusicKey
 	GetRootPath() string
+	DelMusic(music music.MusicKey) error
 }
 
 type LocalFileStorage struct {
@@ -37,6 +38,18 @@ func (ls *LocalFileStorage) SaveMusic(music music.MusicKey) error {
 
 	key, _ := json.Marshal(music)
 	return os.WriteFile(fmt.Sprintf("%s/%x.raw", ls.Root, md5.Sum(key)), key, 0644)
+}
+
+func (ls *LocalFileStorage) DelMusic(music music.MusicKey) error {
+	if len(ls.Root) == 0 {
+		return nil
+	}
+
+	key, _ := json.Marshal(music)
+	path := fmt.Sprintf("%s/%x.raw", ls.Root, md5.Sum(key))
+	os.Remove(path)
+	os.Remove(music.LocalPath)
+	return nil
 }
 
 func (ls *LocalFileStorage) HistoryMusics() chan music.MusicKey {

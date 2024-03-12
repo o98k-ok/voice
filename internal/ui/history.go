@@ -2,6 +2,7 @@ package ui
 
 import (
 	"container/list"
+	"fmt"
 	"math"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -9,11 +10,13 @@ import (
 	"github.com/o98k-ok/voice/internal/music"
 	"github.com/o98k-ok/voice/internal/pkg"
 	"github.com/o98k-ok/voice/internal/player"
+	"github.com/o98k-ok/voice/internal/storage"
 )
 
 type HistoryList struct {
 	list    *ListElem
 	player  *player.VoicePlayer
+	storage storage.Storage
 	active  bool
 	current int
 
@@ -21,12 +24,13 @@ type HistoryList struct {
 	limit int
 }
 
-func NewHistoryList(player *player.VoicePlayer, headers []string, widths []int) *HistoryList {
+func NewHistoryList(player *player.VoicePlayer, index storage.Storage, headers []string, widths []int) *HistoryList {
 	return &HistoryList{
-		list:   NewListElem(headers, widths, nil),
-		player: player,
-		page:   1,
-		limit:  10,
+		list:    NewListElem(headers, widths, nil),
+		player:  player,
+		page:    1,
+		limit:   10,
+		storage: index,
 	}
 }
 
@@ -35,8 +39,13 @@ func (hl *HistoryList) Init() tea.Cmd {
 }
 
 func (hl *HistoryList) View() string {
-	help := "enter play • ↓/j move down • ↑/k move up\n ← page left • → page right • tab next menu"
-	return lipgloss.JoinVertical(lipgloss.Center, hl.list.View(), "\n", help)
+	help := "enter play • ↓/j move down • ↑/k move up\n backspace del music • ← page left • → page right"
+
+	size := math.Ceil(float64(hl.player.PlayList.Len()) / float64(hl.limit))
+	pageInfo := fmt.Sprintf("%d • %d/%d页", hl.list.table.Cursor()+1, hl.page, int(size))
+
+	v := lipgloss.JoinVertical(lipgloss.Right, hl.list.View(), " ", pageInfo)
+	return lipgloss.JoinVertical(lipgloss.Center, v, "\n", help)
 }
 
 func (hl *HistoryList) fechByBvID(bvID string, limit int) [][]string {
@@ -57,7 +66,7 @@ func (hl *HistoryList) fechByBvID(bvID string, limit int) [][]string {
 				hl.current = i
 				hl.page = page
 			}
-			values = append(values, []string{m.Name, m.Desc, m.Duration, m.BvID})
+			values = append(values, []string{m.Name, m.Desc, m.Duration, m.BvID, m.LocalPath})
 			p = p.Next()
 		}
 		if got || p == nil {
@@ -80,7 +89,7 @@ func (hl *HistoryList) fechList(off, limit int) [][]string {
 				break
 			}
 			m := p.Value.(*music.Music)
-			values = append(values, []string{m.Name, m.Desc, m.Duration, m.BvID})
+			values = append(values, []string{m.Name, m.Desc, m.Duration, m.BvID, m.LocalPath})
 			p = p.Next()
 		}
 		if page >= off || p == nil {
@@ -103,6 +112,41 @@ func (hl *HistoryList) MsgKeyBindings() map[string]map[string]func(interface{}) 
 				hl.list.table.Focus()
 				hl.list.ResetList(hl.fechByBvID(hl.player.CurrentElem.Value.(*music.Music).BvID, 10))
 				hl.list.table.SetCursor(hl.current)
+				return nil
+			},
+			"backspace": func(i interface{}) tea.Cmd {
+				if !hl.active {
+					return nil
+				}
+
+				m := hl.list.table.SelectedRow()
+				hl.storage.DelMusic(music.MusicKey{
+					Name:      m[0],
+					Desc:      m[1],
+					BVID:      m[3],
+					Duration:  m[2],
+					LocalPath: m[4],
+				})
+
+				p := hl.player.PlayList.Front()
+				for ; p != nil; p = p.Next() {
+					if p.Value.(*music.Music).BvID == m[3] {
+						break
+					}
+				}
+				hl.player.PlayList.Remove(p)
+
+				// 刷新列表数据
+				size := math.Ceil(float64(hl.player.PlayList.Len()) / float64(hl.limit))
+				if hl.page > int(size) {
+					hl.page -= 1
+				}
+				hl.list.ResetList(hl.fechList(hl.page, hl.limit))
+
+				// 如果正在播放，就下一首
+				if p == hl.player.CurrentElem {
+					hl.player.Next()
+				}
 				return nil
 			},
 			"enter": func(i interface{}) tea.Cmd {
