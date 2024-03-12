@@ -6,7 +6,6 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/duke-git/lancet/v2/strutil"
 	"github.com/o98k-ok/voice/internal/music"
 	"github.com/o98k-ok/voice/internal/pkg"
 	"github.com/o98k-ok/voice/internal/player"
@@ -96,22 +95,13 @@ func (hl *HistoryList) fechList(off, limit int) [][]string {
 func (hl *HistoryList) MsgKeyBindings() map[string]map[string]func(interface{}) tea.Cmd {
 	return map[string]map[string]func(interface{}) tea.Cmd{
 		"tea.KeyMsg": {
-			ALLMsgKey: func(v interface{}) tea.Cmd {
-				if !hl.active || strutil.ContainsAny(v.(tea.KeyMsg).String(), []string{" ", "left", "right"}) {
-					return nil
-				}
-				hl.list.table.Focus()
-
-				hl.list.ResetList(hl.fechByBvID(hl.player.CurrentElem.Value.(*music.Music).BvID, 10))
-				var cmd tea.Cmd
-				hl.list.table, cmd = hl.list.table.Update(v)
-				return cmd
-			},
 			"tab": func(i interface{}) tea.Cmd {
 				if !hl.active {
 					return nil
 				}
 
+				hl.list.table.Focus()
+				hl.list.ResetList(hl.fechByBvID(hl.player.CurrentElem.Value.(*music.Music).BvID, 10))
 				hl.list.table.SetCursor(hl.current)
 				return nil
 			},
@@ -164,6 +154,16 @@ func (hl *HistoryList) MsgKeyBindings() map[string]map[string]func(interface{}) 
 				}
 				hl.list.ResetList(hl.fechList(hl.page, hl.limit))
 				hl.list.table.SetCursor(hl.current)
+				var cmd tea.Cmd
+				hl.list.table, cmd = hl.list.table.Update(i)
+				return cmd
+			},
+			"up": func(i interface{}) tea.Cmd {
+				var cmd tea.Cmd
+				hl.list.table, cmd = hl.list.table.Update(i)
+				return cmd
+			},
+			"down": func(i interface{}) tea.Cmd {
 				var cmd tea.Cmd
 				hl.list.table, cmd = hl.list.table.Update(i)
 				return cmd
