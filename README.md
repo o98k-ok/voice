@@ -8,6 +8,19 @@
 ## Basic introduction
 一款运行在命令行的音乐播放器.
 
+### How to run
+
+```shell
+# go run cmd/terminal/main.go -h
+
+go run cmd/terminal/main.go --home ./data  # ./data need exist in advance
+```
+
+home目录作用如下:
+1. 存储所有的音频元数据信息
+2. 存储所有的音频信息
+3. 作为音频格式转化的临时目录
+
 ## Running screenshot
 
 ### 当前播放
@@ -18,6 +31,7 @@
 1. 歌曲基本信息
 2. 音乐播放进度
 3. 播放切换/暂停播放
+4. 歌曲快进/倒退
 
 ### 歌曲搜索
 
@@ -33,8 +47,9 @@
 ![](./assets/Pasted%20image%2020240311154510.png)
 
 1. 播放列表信息展示
-2. 列表切换
+2. 播放列表切换
 3. 播放音乐切换
+4. 歌曲删除
 
 ## Supported features
 
@@ -50,3 +65,12 @@
 2. 音频下载
 3. 每日推荐
 4. .......
+
+## Acknowledgments
+
+* [bubbletea](https://github.com/charmbracelet/bubbletea): The fun, functional and stateful way to build terminal apps.
+* [beep](https://github.com/faiface/beep): A little package that brings sound to any Go application.
+* [lancet](https://github.com/duke-git/lancet): Lancet is a comprehensive, efficient, and reusable util function library of go.
+
+
+## Star && Follow
