@@ -47,6 +47,7 @@ func (q *StreamerQueue) Add(elem *list.Element) {
 	data.DurationCallback = streamer.Len
 	data.PositionCallback = streamer.Position
 	data.SampleRate = format.SampleRate
+	data.Close = streamer.Close
 
 	q.streamers = append(q.streamers, NewTask(elem, c2))
 }
