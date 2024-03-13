@@ -39,7 +39,7 @@ func (hl *HistoryList) Init() tea.Cmd {
 }
 
 func (hl *HistoryList) View() string {
-	help := "enter play • ↓/j move down • ↑/k move up\n backspace del music • ← page left • → page right"
+	help := "enter play • ↓/j move down • ↑/k move up\nbackspace del music • ← page left • → page right"
 
 	size := math.Ceil(float64(hl.player.PlayList.Len()) / float64(hl.limit))
 	pageInfo := fmt.Sprintf("%d • %d/%d页", hl.list.table.Cursor()+1, hl.page, int(size))

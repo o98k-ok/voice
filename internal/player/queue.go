@@ -43,6 +43,7 @@ func (q *StreamerQueue) Add(elem *list.Element) {
 	// setting music trigger
 	data.NextTrigger = c2.Send
 	data.PauseTrigger = c1.Send
+	data.SeekTrigger = streamer.Seek
 	data.DurationCallback = streamer.Len
 	data.PositionCallback = streamer.Position
 	data.SampleRate = format.SampleRate

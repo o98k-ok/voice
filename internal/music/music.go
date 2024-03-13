@@ -20,6 +20,7 @@ type Music struct {
 
 	NextTrigger      func()
 	PauseTrigger     func()
+	SeekTrigger      func(int) error
 	DurationCallback func() int
 	PositionCallback func() int
 }
