@@ -43,7 +43,7 @@ func NewInputElem(player *player.VoicePlayer, storage storage.Storage, headers [
 		logo:       &LogoElem{},
 		result:     NewListElem(headers, widths, nil),
 		fetcher:    bilibili.NewBlibliFetcher(netutil.NewHttpClient()),
-		mconvertor: convertor.NewAfconvertConvertor("./data"),
+		mconvertor: convertor.NewAfconvertConvertor(storage.GetRootPath()),
 		fetcherIdx: 1,
 		storage:    storage,
 		player:     player,
