@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -9,12 +10,20 @@ import (
 	"github.com/o98k-ok/voice/internal/ui"
 )
 
-const (
-	ROOT = "./data"
-)
+type Options struct {
+	RootPath string
+}
+
+func options() *Options {
+	var option Options
+	flag.StringVar(&option.RootPath, "home", "./data", "voice working home path[must exist]")
+
+	flag.Parse()
+	return &option
+}
 
 func main() {
-	localIndex := storage.NewLocalFileStorage(ROOT)
+	localIndex := storage.NewLocalFileStorage(options().RootPath)
 	player := player.NewVoicePlayer(48000)
 	player.InitPlayList(localIndex)
 	player.Run()

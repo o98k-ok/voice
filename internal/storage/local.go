@@ -22,6 +22,10 @@ type LocalFileStorage struct {
 }
 
 func NewLocalFileStorage(root string) *LocalFileStorage {
+	if _, err := os.Stat(root); err != nil {
+		panic(err)
+	}
+
 	return &LocalFileStorage{
 		Root: root,
 	}

@@ -110,7 +110,9 @@ func (hl *HistoryList) MsgKeyBindings() map[string]map[string]func(interface{}) 
 				}
 
 				hl.list.table.Focus()
-				hl.list.ResetList(hl.fechByBvID(hl.player.CurrentElem.Value.(*music.Music).BvID, 10))
+				if hl.player.CurrentElem != nil {
+					hl.list.ResetList(hl.fechByBvID(hl.player.CurrentElem.Value.(*music.Music).BvID, 10))
+				}
 				hl.list.table.SetCursor(hl.current)
 				return nil
 			},
