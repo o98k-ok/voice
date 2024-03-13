@@ -6,7 +6,7 @@
 [![Release](https://img.shields.io/badge/release-0.1.0-green.svg)](https://github.com/o98k-ok/voice/releases)
 
 ## Basic introduction
-一款运行在命令行的音乐播放器.
+一款运行在MacOS命令行的音乐播放器.
 
 ### How to run
 
