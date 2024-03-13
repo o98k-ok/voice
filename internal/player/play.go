@@ -133,6 +133,13 @@ func (vp *VoicePlayer) Run() error {
 			if vp.PlayingQueue.Size() == 0 && vp.CurrentElem != nil {
 				// avoid stream conflict
 				// time.Sleep(time.Millisecond * 100)
+				// clear last song file
+				if vp.CurrentElem != nil {
+					fn := vp.CurrentElem.Value.(*music.Music).Close
+					if fn != nil {
+						fn()
+					}
+				}
 				vp.CurrentElem = pkg.NextForward(vp.PlayList, vp.CurrentElem)
 				if vp.CurrentElem != nil {
 					vp.PlayingQueue.Add(vp.CurrentElem)
