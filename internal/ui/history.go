@@ -66,7 +66,7 @@ func (hl *HistoryList) fechByBvID(bvID string, limit int) [][]string {
 				hl.current = i
 				hl.page = page
 			}
-			values = append(values, []string{m.Name, m.Desc, m.Duration, m.BvID, m.LocalPath})
+			values = append(values, []string{m.Name, m.Desc, m.Duration, m.BvID, m.LocalPath, m.Key})
 			p = p.Next()
 		}
 		if got || p == nil {
@@ -89,7 +89,7 @@ func (hl *HistoryList) fechList(off, limit int) [][]string {
 				break
 			}
 			m := p.Value.(*music.Music)
-			values = append(values, []string{m.Name, m.Desc, m.Duration, m.BvID, m.LocalPath})
+			values = append(values, []string{m.Name, m.Desc, m.Duration, m.BvID, m.LocalPath, m.Key})
 			p = p.Next()
 		}
 		if page >= off || p == nil {
@@ -122,12 +122,14 @@ func (hl *HistoryList) MsgKeyBindings() map[string]map[string]func(interface{}) 
 				}
 
 				m := hl.list.table.SelectedRow()
+				// 使用storage v2之后， 这里其实只需要传递key
 				hl.storage.DelMusic(music.MusicKey{
 					Name:      m[0],
 					Desc:      m[1],
 					BVID:      m[3],
 					Duration:  m[2],
 					LocalPath: m[4],
+					Key:       m[5],
 				})
 
 				p := hl.player.PlayList.Front()

@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/charmbracelet/bubbles/progress"
@@ -40,11 +41,12 @@ func (pe *ProceeLineElem) View() string {
 	}
 
 	music := pe.player.Current()
+	menu := fmt.Sprintf("p prev • space pause/play • n next • r %s\ntab next menu • left -5s • right +5s", pe.player.GetMode())
 	return lipgloss.JoinVertical(lipgloss.Center,
 		pkg.RenderWithWidth(music.Name, MaxWindowSize*0.6), "\n",
 		pkg.RenderWithWidth(music.Desc, MaxWindowSize*0.6), "\n",
 		pe.progress.ViewAs(pe.progress.Percent())+"  "+music.DurationRate(), "\n",
-		lipgloss.NewStyle().Bold(true).Render("p prev • space pause/play • n next\ntab next menu • left -5s • right +5s"))
+		lipgloss.NewStyle().Bold(true).Render(menu))
 }
 
 func (pe *ProceeLineElem) MsgKeyBindings() map[string]map[string]func(interface{}) tea.Cmd {
@@ -80,6 +82,13 @@ func (pe *ProceeLineElem) MsgKeyBindings() map[string]map[string]func(interface{
 					p := pkg.NextN(pe.player.PlayList, pe.player.CurrentElem, -2)
 					pe.player.NextP(p)
 				}
+				return nil
+			},
+			"r": func(i interface{}) tea.Cmd {
+				if !pe.active {
+					return nil
+				}
+				pe.player.SelectMode()
 				return nil
 			},
 			"left": func(i interface{}) tea.Cmd {

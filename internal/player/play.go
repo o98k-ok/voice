@@ -5,6 +5,7 @@ import (
 
 	"container/list"
 
+	"github.com/duke-git/lancet/v2/random"
 	"github.com/faiface/beep"
 	"github.com/faiface/beep/speaker"
 	"github.com/o98k-ok/voice/internal/music"
@@ -33,6 +34,8 @@ type VoicePlayer struct {
 	PlayingQueue *StreamerQueue
 
 	CurrentElem *list.Element
+	ModeIdx     int64
+	Modes       []string
 }
 
 func NewVoicePlayer(sampleRate int64) *VoicePlayer {
@@ -45,6 +48,8 @@ func NewVoicePlayer(sampleRate int64) *VoicePlayer {
 		SampleRate:   sampleRate,
 		PlayList:     list.New(),
 		PlayingQueue: NewStreamerQueue(int(sampleRate)),
+		Modes:        []string{"sequence", "cycle", "random"},
+		ModeIdx:      0,
 	}
 }
 
@@ -56,8 +61,27 @@ func (vp *VoicePlayer) InitPlayList(storage storage.Storage) {
 			BvID:      m.BVID,
 			LocalPath: m.LocalPath,
 			Duration:  m.Duration,
+			Key:       m.Key,
 		})
 	}
+}
+
+func (vp *VoicePlayer) GetMode() string {
+	switch vp.Modes[vp.ModeIdx] {
+	case "sequence":
+		return "⏯"
+	case "cycle":
+		return "🔄"
+	case "random":
+		return "🔀"
+	default:
+		return "⏯"
+	}
+}
+
+func (vp *VoicePlayer) SelectMode() {
+	idx := (vp.ModeIdx + 1) % int64(len(vp.Modes))
+	vp.ModeIdx = idx
 }
 
 func (vp *VoicePlayer) Pause() error {
@@ -130,19 +154,29 @@ func (vp *VoicePlayer) Run() error {
 				vp.CurrentElem = vp.PlayList.Front()
 			}
 
+			// 播放完成，清理资源，播放下一首
 			if vp.PlayingQueue.Size() == 0 && vp.CurrentElem != nil {
-				// avoid stream conflict
-				// time.Sleep(time.Millisecond * 100)
-				// clear last song file
 				if vp.CurrentElem != nil {
 					fn := vp.CurrentElem.Value.(*music.Music).Close
 					if fn != nil {
 						fn()
 					}
 				}
-				vp.CurrentElem = pkg.NextForward(vp.PlayList, vp.CurrentElem)
-				if vp.CurrentElem != nil {
-					vp.PlayingQueue.Add(vp.CurrentElem)
+				switch vp.Modes[vp.ModeIdx] {
+				case "random":
+					vp.CurrentElem = pkg.NextN(vp.PlayList, vp.CurrentElem, random.RandInt(-10, 10))
+					if vp.CurrentElem != nil {
+						vp.PlayingQueue.Add(vp.CurrentElem)
+					}
+				case "cycle":
+					if vp.CurrentElem != nil {
+						vp.PlayingQueue.Add(vp.CurrentElem)
+					}
+				case "sequence":
+					vp.CurrentElem = pkg.NextForward(vp.PlayList, vp.CurrentElem)
+					if vp.CurrentElem != nil {
+						vp.PlayingQueue.Add(vp.CurrentElem)
+					}
 				}
 			}
 			time.Sleep(time.Microsecond * 100)

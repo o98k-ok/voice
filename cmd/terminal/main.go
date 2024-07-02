@@ -23,7 +23,7 @@ func options() *Options {
 }
 
 func main() {
-	localIndex := storage.NewLocalFileStorage(options().RootPath)
+	localIndex := storage.NewLocalFileStorageV2(options().RootPath)
 	player := player.NewVoicePlayer(48000)
 	player.InitPlayList(localIndex)
 	player.Run()
@@ -34,8 +34,8 @@ func main() {
 	)
 	processBar := ui.NewProcessLineElem(player)
 	historyList := ui.NewHistoryList(player, localIndex,
-		[]string{"标题", "描述", "时长", "BVID", "path"},
-		[]int{40, 60, 12, 0, 0},
+		[]string{"标题", "描述", "时长", "BVID", "path", "id"},
+		[]int{40, 60, 12, 0, 0, 0},
 	)
 
 	elems := []ui.Element{processBar, inputElem, historyList}
