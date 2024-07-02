@@ -17,6 +17,7 @@ type Music struct {
 	LocalPath  string
 	SampleRate beep.SampleRate
 	Duration   string
+	Key        string
 
 	NextTrigger      func()
 	PauseTrigger     func()
@@ -40,4 +41,5 @@ type MusicKey struct {
 	BVID      string `json:"bvid"`
 	LocalPath string `json:"local_path"`
 	Duration  string `json:"duration"`
+	Key       string `json:"key"`
 }
