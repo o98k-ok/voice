@@ -41,7 +41,7 @@ func (pe *ProceeLineElem) View() string {
 	}
 
 	music := pe.player.Current()
-	menu := fmt.Sprintf("p prev • space pause/play • n next • r %s\ntab next menu • left -5s • right +5s", pe.player.GetMode())
+	menu := fmt.Sprintf("p prev • space pause/play • n next\ntab next menu • left -5s • right +5s\nr change mode • current: %s", pe.player.GetMode())
 	return lipgloss.JoinVertical(lipgloss.Center,
 		pkg.RenderWithWidth(music.Name, MaxWindowSize*0.6), "\n",
 		pkg.RenderWithWidth(music.Desc, MaxWindowSize*0.6), "\n",
