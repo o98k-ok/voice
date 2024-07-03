@@ -10,6 +10,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/duke-git/lancet/v2/mathutil"
 	"github.com/duke-git/lancet/v2/netutil"
+	"github.com/duke-git/lancet/v2/random"
 	"github.com/duke-git/lancet/v2/strutil"
 	"github.com/o98k-ok/voice/internal/bilibili"
 	"github.com/o98k-ok/voice/internal/convertor"
@@ -24,12 +25,15 @@ type InputElem struct {
 	logo       *LogoElem
 	result     *ListElem
 	fetcher    bilibili.Fetcher
+	dyHelper   bilibili.DouyinHelper
 	mconvertor convertor.Convertor
 
-	fetcherIdx int
-	active     bool
-	storage    storage.Storage
-	player     *player.VoicePlayer
+	fetcherIdx  int
+	active      bool
+	storage     storage.Storage
+	player      *player.VoicePlayer
+	suggestKeys []string
+	suggestKey  string
 }
 
 func NewInputElem(player *player.VoicePlayer, storage storage.Storage, headers []string, widths []int) *InputElem {
@@ -43,6 +47,7 @@ func NewInputElem(player *player.VoicePlayer, storage storage.Storage, headers [
 		logo:       &LogoElem{},
 		result:     NewListElem(headers, widths, nil),
 		fetcher:    bilibili.NewBlibliFetcher(netutil.NewHttpClient()),
+		dyHelper:   bilibili.NewDouyinHelper(netutil.NewHttpClient()),
 		mconvertor: convertor.NewAfconvertConvertor(storage.GetRootPath()),
 		fetcherIdx: 1,
 		storage:    storage,
@@ -54,10 +59,14 @@ func (ie *InputElem) Active() bool          { return ie.active }
 func (ie *InputElem) SetActive(active bool) { ie.active = active }
 
 func (ie *InputElem) Init() tea.Cmd {
+	keys := ie.dyHelper.HotKeys()
+	ie.suggestKeys = keys
+	ie.suggestKey = keys[0]
 	return textinput.Blink
 }
 
 func (ie *InputElem) View() string {
+	ie.textInput.Placeholder = ie.suggestKey
 	border := lipgloss.RoundedBorder()
 	box := lipgloss.NewStyle().
 		BorderStyle(border).
@@ -173,6 +182,9 @@ func (ie *InputElem) MsgKeyBindings() map[string]map[string]func(v interface{}) 
 					ie.fetcherIdx += 1
 					pack := ie.fetch(ie.fetcherIdx)
 					ie.result.ResetList(pack)
+				case ie.textInput.Focused():
+					ie.textInput.SetValue(ie.suggestKey)
+					ie.suggestKey = ie.suggestKeys[random.RandInt(0, len(ie.suggestKeys))]
 				}
 				return nil
 			},

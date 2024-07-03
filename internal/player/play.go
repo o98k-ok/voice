@@ -69,13 +69,13 @@ func (vp *VoicePlayer) InitPlayList(storage storage.Storage) {
 func (vp *VoicePlayer) GetMode() string {
 	switch vp.Modes[vp.ModeIdx] {
 	case "sequence":
-		return "⏯"
+		return "⏯ 顺序"
 	case "cycle":
-		return "🔄"
+		return "🔄 循环"
 	case "random":
-		return "🔀"
+		return "🔀 随机"
 	default:
-		return "⏯"
+		return "⏯ 顺序"
 	}
 }
 
