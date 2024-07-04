@@ -66,7 +66,9 @@ func (ie *InputElem) Init() tea.Cmd {
 }
 
 func (ie *InputElem) View() string {
-	ie.textInput.Placeholder = ie.suggestKey
+	if len(ie.suggestKeys) > 0 {
+		ie.textInput.Placeholder = ie.suggestKey
+	}
 	border := lipgloss.RoundedBorder()
 	box := lipgloss.NewStyle().
 		BorderStyle(border).
@@ -116,6 +118,20 @@ func (ie *InputElem) MsgKeyBindings() map[string]map[string]func(v interface{}) 
 					ie.textInput, cmd = ie.textInput.Update(v)
 				}
 				return cmd
+			},
+			"?": func(v interface{}) tea.Cmd {
+				if !ie.active {
+					return nil
+				}
+
+				switch {
+				case ie.textInput.Focused():
+					if len(ie.suggestKeys) > 0 {
+						ie.textInput.SetValue(ie.suggestKey)
+						ie.suggestKey = ie.suggestKeys[random.RandInt(0, len(ie.suggestKeys))]
+					}
+				}
+				return nil
 			},
 			"down": func(v interface{}) tea.Cmd {
 				if !ie.active {
@@ -182,9 +198,6 @@ func (ie *InputElem) MsgKeyBindings() map[string]map[string]func(v interface{}) 
 					ie.fetcherIdx += 1
 					pack := ie.fetch(ie.fetcherIdx)
 					ie.result.ResetList(pack)
-				case ie.textInput.Focused():
-					ie.textInput.SetValue(ie.suggestKey)
-					ie.suggestKey = ie.suggestKeys[random.RandInt(0, len(ie.suggestKeys))]
 				}
 				return nil
 			},
