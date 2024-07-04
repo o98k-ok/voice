@@ -23,6 +23,7 @@ type DouyinHot struct {
 
 type DouyinHelper interface {
 	HotKeys() []string
+	Free() string
 }
 
 type Douyin struct {
@@ -51,4 +52,30 @@ func (dy *Douyin) HotKeys() []string {
 		keys = append(keys, music.MusicInfo.Title+" "+music.MusicInfo.Author)
 	}
 	return keys
+}
+
+type FreeResp struct {
+	Code int `json:"code"`
+	Data struct {
+		Name        string `json:"name"`
+		URL         string `json:"url"`
+		Picurl      string `json:"picurl"`
+		Artistsname string `json:"artistsname"`
+	} `json:"data"`
+}
+
+func (dy *Douyin) Free() string {
+	rawURL := "https://api.uomg.com/api/rand.music?sort=飙升榜&format=json"
+
+	req := netutil.HttpRequest{
+		RawURL:      rawURL,
+		Method:      http.MethodGet,
+		Headers:     make(http.Header),
+		QueryParams: make(url.Values),
+	}
+	resp, err := pkg.Request(dy.cli, &req, func(result *FreeResp) bool { return result.Code == 1 && len(result.Data.Name) > 0 })
+	if err != nil {
+		return ""
+	}
+	return resp.Data.Name
 }

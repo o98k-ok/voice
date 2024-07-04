@@ -3,6 +3,7 @@ package pkg
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/duke-git/lancet/v2/netutil"
@@ -24,10 +25,12 @@ func Request[T any](cli *netutil.HttpClient, req *netutil.HttpRequest, validate 
 		return nil, err
 	}
 	if response.StatusCode != http.StatusOK {
+		fmt.Println(response.StatusCode)
 		return nil, ErrHttpRequest
 	}
 
 	if !validate(&result) {
+		fmt.Println(result)
 		return nil, ErrHttpRequest
 	}
 	return &result, nil

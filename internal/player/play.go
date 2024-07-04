@@ -34,8 +34,10 @@ type VoicePlayer struct {
 	PlayingQueue *StreamerQueue
 
 	CurrentElem *list.Element
+	FreeElem    *list.Element
 	ModeIdx     int64
 	Modes       []string
+	ForceNext   bool
 }
 
 func NewVoicePlayer(sampleRate int64) *VoicePlayer {
@@ -48,9 +50,17 @@ func NewVoicePlayer(sampleRate int64) *VoicePlayer {
 		SampleRate:   sampleRate,
 		PlayList:     list.New(),
 		PlayingQueue: NewStreamerQueue(int(sampleRate)),
-		Modes:        []string{"sequence", "cycle", "random"},
+		Modes:        []string{"sequence", "cycle", "random", "free"},
 		ModeIdx:      0,
 	}
+}
+
+func (vp *VoicePlayer) WithFreeModeSong() bool {
+	return vp.FreeElem != nil
+}
+
+func (vp *VoicePlayer) SetFreeModeSong(song *music.Music) {
+	vp.FreeElem = &list.Element{Value: song}
 }
 
 func (vp *VoicePlayer) InitPlayList(storage storage.Storage) {
@@ -74,6 +84,8 @@ func (vp *VoicePlayer) GetMode() string {
 		return "🔄 循环"
 	case "random":
 		return "🔀 随机"
+	case "free":
+		return "🫶  自由"
 	default:
 		return "⏯ 顺序"
 	}
@@ -133,6 +145,7 @@ func (vp *VoicePlayer) NextP(p *list.Element) (*music.Music, error) {
 	ctrl := vp.Current()
 	vp.CurrentElem = p
 	if ctrl != nil && ctrl.NextTrigger != nil {
+		vp.ForceNext = true
 		ctrl.NextTrigger()
 	}
 	return nil, nil
@@ -162,7 +175,26 @@ func (vp *VoicePlayer) Run() error {
 						fn()
 					}
 				}
+
+				// 手动切换到下一首，忽略播放模式
+				if vp.ForceNext {
+					vp.CurrentElem = pkg.NextForward(vp.PlayList, vp.CurrentElem)
+					if vp.CurrentElem != nil {
+						vp.PlayingQueue.Add(vp.CurrentElem)
+					}
+					vp.ForceNext = false
+					continue
+				}
+
 				switch vp.Modes[vp.ModeIdx] {
+				case "free":
+					if vp.FreeElem != nil {
+						vp.CurrentElem = vp.PlayList.PushBack(vp.FreeElem.Value)
+						vp.FreeElem = nil
+					}
+					if vp.CurrentElem != nil {
+						vp.PlayingQueue.Add(vp.CurrentElem)
+					}
 				case "random":
 					vp.CurrentElem = pkg.NextN(vp.PlayList, vp.CurrentElem, random.RandInt(-10, 10))
 					if vp.CurrentElem != nil {

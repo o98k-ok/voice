@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -62,6 +63,63 @@ func (ie *InputElem) Init() tea.Cmd {
 	keys := ie.dyHelper.HotKeys()
 	ie.suggestKeys = keys
 	ie.suggestKey = keys[0]
+
+	// 处理free mode播放场景
+	go func() {
+		for {
+			time.Sleep(time.Millisecond * 200)
+			if ie.player.Modes[ie.player.ModeIdx] == "free" && !ie.player.WithFreeModeSong() {
+				keyword := ie.dyHelper.Free()
+				if len(keyword) == 0 {
+					continue
+				}
+
+				// 搜索、下载、加入列表
+				musics, err := ie.fetcher.Search(keyword, 1, 5)
+				if err != nil || len(musics) == 0 {
+					continue
+				}
+
+				for i, u := range ie.fetcher.GetAudioURL(musics[0].BvID) {
+					func(bvID string, url string, idx int, mm *music.Music) {
+						root := ie.storage.GetRootPath()
+						namein := fmt.Sprintf("%s/%s_%d.mp4", root, bvID, idx)
+						nameout := fmt.Sprintf("%s/%s_%d.wav", root, bvID, idx)
+
+						fin, _ := os.Create(namein)
+						fout, _ := os.Create(nameout)
+						ie.fetcher.Download(url, fin)
+						fin.Close()
+
+						fin, _ = os.Open(namein)
+
+						ie.mconvertor.ConvertM4AToWav(fin, fout)
+						fin.Close()
+						fout.Close()
+						os.Remove(namein)
+
+						ie.storage.SaveMusic(music.MusicKey{
+							Name:      mm.Name,
+							Desc:      mm.Desc,
+							BVID:      bvID,
+							LocalPath: nameout,
+							Duration:  mm.Duration,
+						})
+
+						ms := music.Music{
+							Name:      mm.Name,
+							Desc:      mm.Desc,
+							URL:       url,
+							BvID:      bvID,
+							LocalPath: nameout,
+							Duration:  mm.Duration,
+						}
+						ie.player.SetFreeModeSong(&ms)
+					}(musics[0].BvID, u, i, musics[0])
+				}
+			}
+		}
+	}()
 	return textinput.Blink
 }
 
